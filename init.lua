@@ -81,7 +81,7 @@ end
 ---@param cwd string Current working directory to list
 ---@return string # output of ls
 function oil._get_ls(self, cwd)
-  local ls_out = io.popen("ls -laQ --group-directories-first " .. cwd):lines("a")()
+  local ls_out = io.popen("ls -lapQ --group-directories-first " .. cwd):lines("a")()
   return ls_out
 end
 
@@ -103,7 +103,7 @@ function oil._parse_ls(self, ls_out, cwd)
     end
 
     local name = table.concat(params, " ", 9, #params)
-    local is_dir = name:sub(#name, #name) == "/"
+    local is_dir = name:sub(-1) == "/"
     if is_dir then
       name = name:sub(1, #name - 1)
     end
