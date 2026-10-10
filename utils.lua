@@ -10,7 +10,17 @@ require("vis-oil.entry")
 ---@param name string File name
 ---@param is_dir boolean Entry is a/to directory
 ---@param cwd string Current working directory
-local function entry_model(type, permissions, user_owner, group_owner, size, date, name, cwd, is_dir)
+local function entry_model(
+	type,
+	permissions,
+	user_owner,
+	group_owner,
+	size,
+	date,
+	name,
+	cwd,
+	is_dir
+)
 	---@type string
 	local display_name = name
 	if is_dir and display_name:sub(-1) ~= "/" then
