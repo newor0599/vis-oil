@@ -1,4 +1,6 @@
 Very early stage
 
 Whats implemented
-- list cwd
+- List cwd
+- Traverse directory
+- Open file

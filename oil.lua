@@ -26,37 +26,25 @@ function oil:make_file_id()
 	return self.file_ids
 end
 
----@param method? "current"|"horizontal"|"vertical" Start oil in current buffer/horizontally/vertically (default)
+---@param method? "horizontal"|"vertical" Start oil horizontally/vertically (default)
 function oil:open(method)
+	local cwd = Shell.get_win_cwd()
+
 	if method == nil or method == "vertical" then
 		method = "vertical"
 		vis:command("vnew")
 	elseif method == "horizontal" then
 		vis:command("split")
-	elseif method == "current" then
-		if vis.win.file.modified then
-			vis:info("Save your changes first!")
-			return
-		end
 	end
 
-	local cwd = Shell.get_win_cwd()
-	-- vis:message("Active window type: "..type(vis.win))
 	local window = vis.win
 	local instance = Instance.new(self, window, cwd)
-	-- self.instances[id] = instance
 
 	instance:insert_data()
 
-	-- if instance.window.file.name == nil then
-	-- 	vis:feedkeys("gg")
-	-- end
-
-	-- vis.events.subscribe(vis.events.INPUT, function(keys)
-	-- 	if keys == "dd" then
-	-- 		self.oil_window.file:snapshot()
-	-- 	end
-	-- end)
+	if instance.window.file.name == nil then
+		vis:feedkeys("gg")
+	end
 end
 
 function oil.open_vertical(self)
@@ -65,10 +53,6 @@ end
 
 function oil.open_horizontal(self)
 	self:open("horizontal")
-end
-
-function oil.open_current(self)
-	self:open("current")
 end
 
 return oil

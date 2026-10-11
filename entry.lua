@@ -23,13 +23,27 @@ local Entry = {}
 ---@param cwd string
 ---@param is_dir boolean
 ---@return Entry
-function Entry.new(type, permissions, user_owner, group_owner, size, date, name, cwd, is_dir)
+function Entry.new(
+	type,
+	permissions,
+	user_owner,
+	group_owner,
+	size,
+	date,
+	name,
+	cwd,
+	is_dir
+)
 	---@type string
 	local display_name = name
+	local file_name = name:gsub(" %-> .*", "")
+  if is_dir then
+    file_name = file_name.."/"
+  end
+
 	if is_dir and display_name:sub(-1) ~= "/" then
 		display_name = display_name .. "/"
 	end
-	local file_name = name:gsub(" %-%> .*", "")
 
 	local is_hidden = name:sub(1, 1) == "."
 	if name == ".." or name == "." then
@@ -37,7 +51,7 @@ function Entry.new(type, permissions, user_owner, group_owner, size, date, name,
 	end
 
 	return {
-		path = cwd .. name,
+		path = cwd..file_name,
 		is_dir = is_dir,
 		type = type,
 		size = size,

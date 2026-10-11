@@ -1,52 +1,4 @@
----@diagnostic disable: unused-function
 require("vis-oil.entry")
-
----@param type string Entry type (directory, file, symlink, etc)
----@param size string Entry size
----@param date string Entry creation date
----@param user_owner string User that owns the entry
----@param group_owner string Group that owns the entry
----@param permissions string Permission bits
----@param name string File name
----@param is_dir boolean Entry is a/to directory
----@param cwd string Current working directory
-local function entry_model(
-	type,
-	permissions,
-	user_owner,
-	group_owner,
-	size,
-	date,
-	name,
-	cwd,
-	is_dir
-)
-	---@type string
-	local display_name = name
-	if is_dir and display_name:sub(-1) ~= "/" then
-		display_name = display_name .. "/"
-	end
-	local file_name = name:gsub(" %-%> .*", "")
-
-	local is_hidden = name:sub(1, 1) == "."
-	if name == ".." or name == "." then
-		is_hidden = false
-	end
-
-	return {
-		path = cwd .. name,
-		is_dir = is_dir,
-		type = type,
-		size = size,
-		date = date,
-		user_owner = user_owner,
-		group_owner = group_owner,
-		permissions = permissions,
-		name = file_name,
-		display_name = display_name,
-		is_hidden = is_hidden,
-	}
-end
 
 ---@param ls_out string Output of `ls -laQ`
 ---@param cwd string Current working directory
@@ -73,7 +25,7 @@ local function parse_ls(ls_out, cwd)
 		name = name:sub(2, #name - 1)
 		name = name:gsub('%" %-%> %"', " -> ")
 
-		local entry = entry_model(
+		local entry = Entry.new(
 			params[1]:sub(1, 1),
 			params[1]:sub(2, #params[1]),
 			params[3],
