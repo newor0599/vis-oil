@@ -14,22 +14,12 @@ oil = {
 	SYM_COLOR = vis.ui:style_push("fore:#C7C795,back:#1C2023"),
 	INSTANCE_EXIT_EVENT = "OIL_INSTANCE_EXIT",
 	file_ids = 0,
-	window_ids = 0,
 	instances = {},
 }
-
-vis.events.subscribe(oil.INSTANCE_EXIT_EVENT, function(id)
-	vis:info(id .. " instance ended")
-end)
 
 oil.options = {
 	show_hidden = false,
 }
-
-function oil:make_window_id()
-	self.window_ids = self.window_ids + 1
-	return self.window_ids
-end
 
 function oil:make_file_id()
 	self.file_ids = self.file_ids + 1
@@ -38,12 +28,11 @@ end
 
 ---@param method? "current"|"horizontal"|"vertical" Start oil in current buffer/horizontally/vertically (default)
 function oil:open(method)
-	local window_id = "OIL\\ " .. tostring(self:make_window_id())
 	if method == nil or method == "vertical" then
 		method = "vertical"
-		vis:command("vsplit " .. window_id)
+		vis:command("vnew")
 	elseif method == "horizontal" then
-		vis:command("split " .. window_id)
+		vis:command("split")
 	elseif method == "current" then
 		if vis.win.file.modified then
 			vis:info("Save your changes first!")

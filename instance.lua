@@ -33,14 +33,14 @@ function instance:insert_data()
 	self.window:draw()
 end
 
-function instance:statusbar()
-	if self.window ~= nil then
-		-- self.window:status("OIL")
+function instance:statusbar(win)
+	if self.window == win then
+    self.window:status("Oil")
 	end
 end
 
-function instance:highlight()
-	if self.window then
+function instance:highlight(win)
+	if self.window == win then
 		self.window:style(
 			self.oil.DIR_COLOR,
 			self.directory_lines.start,
@@ -49,45 +49,45 @@ function instance:highlight()
 	end
 end
 
-function instance:close()
-	self.window = nil
-	vis.events.unsubscribe(vis.events.WIN_STATUS, self.statusbar_handler)
-	vis.events.unsubscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
+function instance:close(win)
+	if self.window == win then
+		self.window = nil
+		vis.events.unsubscribe(vis.events.WIN_STATUS, self.statusbar_handler)
+		vis.events.unsubscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
+	end
 end
 
 function instance:init()
-	self.statusbar_handler = function()
-		self:statusbar()
+	self.statusbar_handler = function(win)
+		self:statusbar(win)
 	end
 
-	self.highlight_handler = function()
-		self:highlight()
+	self.highlight_handler = function(win)
+		self:highlight(win)
+	end
+
+	self.close_handler = function(win)
+		self:close(win)
 	end
 
 	vis.events.subscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
 
 	vis.events.subscribe(vis.events.WIN_STATUS, self.statusbar_handler)
 
+	vis.events.subscribe(vis.events.WIN_CLOSE, self.close_handler)
+
 	self.window:map(vis.modes.NORMAL, "q", function()
-		id = self.window.file.name
-		self.window:close(true)
-		self:close()
-		vis.events.emit(self.oil.INSTANCE_EXIT_EVENT, id)
+		if self.window then
+			local id = self.window.file.name
+			self.window:close(true)
+			self:close()
+			vis.events.emit(self.oil.INSTANCE_EXIT_EVENT, id)
+		end
 	end)
 
 	self.window:map(vis.modes.NORMAL, "<Enter>", function()
 		vis:info("cool")
 	end)
-
-	-- self.window:map(vis.modes.NORMAL, ".", function()
-	-- 	self.oil.options.show_hidden = not self.oil.options.show_hidden
-	-- 	self.window:close(true)
-	-- 	self.open()
-	-- 	self.oil_window.file:delete({
-	-- 		start = 0,
-	-- 		finish = self.oil_window.file.size,
-	-- 	})
-	-- end)
 
 	self.window:map(vis.modes.NORMAL, "c", function()
 		vis:info(self.cwd)
