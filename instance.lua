@@ -30,23 +30,22 @@ function instance:insert_data()
 			window_cursor = window_cursor + 1
 		end
 	end
+	self.window:draw()
 end
 
 function instance:statusbar()
-	if self.window then
-		self.window:status("OIL")
+	if self.window ~= nil then
+		-- self.window:status("OIL")
 	end
 end
 
 function instance:highlight()
 	if self.window then
-		if type(self.oil.DIR_COLOR) == "number" then
-			self.window:style(
-				self.oil.DIR_COLOR,
-				self.directory_lines.start,
-				self.directory_lines.finish
-			)
-		end
+		self.window:style(
+			self.oil.DIR_COLOR,
+			self.directory_lines.start,
+			self.directory_lines.finish
+		)
 	end
 end
 
@@ -54,27 +53,26 @@ function instance:close()
 	self.window = nil
 	vis.events.unsubscribe(vis.events.WIN_STATUS, self.statusbar_handler)
 	vis.events.unsubscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
-	vis.events.unsubscribe(vis.events.WIN_CLOSE, self.close_handler)
 end
 
 function instance:init()
 	self.statusbar_handler = function()
 		self:statusbar()
 	end
+
 	self.highlight_handler = function()
 		self:highlight()
 	end
-	self.close_handler = function()
-		self:close()
-	end
+
 	vis.events.subscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
 
 	vis.events.subscribe(vis.events.WIN_STATUS, self.statusbar_handler)
 
-	vis.events.subscribe(vis.events.WIN_CLOSE, self.close_handler)
-
 	self.window:map(vis.modes.NORMAL, "q", function()
+		id = self.window.file.name
 		self.window:close(true)
+		self:close()
+		vis.events.emit(self.oil.INSTANCE_EXIT_EVENT, id)
 	end)
 
 	self.window:map(vis.modes.NORMAL, "<Enter>", function()
