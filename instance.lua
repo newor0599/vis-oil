@@ -8,14 +8,11 @@
 ---@field original_file string
 ---@field window vis.window
 ---@field directory_lines vis.range
----@field symlink_lines vis.range
----@field entries table
 instance = {}
 instance.__index = instance
 
 function instance:insert_data()
 	self.window.file:delete({ start = 0, finish = self.window.file.size })
-	self.entries = {}
 
 	local ls_out = Shell.get_ls(self.cwd)
 	local entries = Utils.parse_ls(ls_out, self.cwd)
@@ -33,8 +30,6 @@ function instance:insert_data()
 
 			self.window.file:insert(window_cursor, "\n")
 			window_cursor = window_cursor + 1
-
-			self.entries[entry["display_name"]] = entry
 		end
 	end
 	self.window:draw()
@@ -151,8 +146,6 @@ function instance.new(oil, window, cwd)
 		original_file = window.file.path,
 		window = window,
 		directory_lines = { start = 0, finish = 1 },
-		symlink_lines = { start = 0, finish = 0 },
-		entries = {},
 	}
 	setmetatable(new, { __index = instance })
 
