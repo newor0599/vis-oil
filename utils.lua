@@ -42,6 +42,18 @@ local function parse_ls(ls_out, cwd)
 	return entries
 end
 
+
+---Copy some element of vis.file to a table
+---@param vis_file vis.file
+local function copy_vis_file(vis_file)
+  return {
+    name = vis_file.name,
+    path = vis_file.path,
+    size = vis_file.size,
+  }
+end
+
 return {
 	parse_ls = parse_ls,
+  copy_vis_file = copy_vis_file,
 }

@@ -26,16 +26,19 @@ function oil:make_file_id()
 	return self.file_ids
 end
 
----@param method? "horizontal"|"vertical" Start oil horizontally/vertically (default)
+---@param method? "horizontal"|"vertical"|"buffer" Start oil at current buffer/horizontally/vertically (default)
 function oil:open(method)
 	local cwd = Shell.get_win_cwd()
-	local original_file = vis.win.file
+	local original_file = Utils.copy_vis_file(vis.win.file)
 
 	if method == nil or method == "vertical" then
 		method = "vertical"
-		vis:command("vnew")
+		vis:command("vsplit")
 	elseif method == "horizontal" then
 		vis:command("split")
+  elseif method == "buffer" then
+    vis.win.file = ""
+    vis.win:set_syntax("text")
 	end
 
 	local window = vis.win
@@ -44,12 +47,16 @@ function oil:open(method)
 	instance:insert_data()
 end
 
-function oil.open_vertical(self)
+function oil:open_vertical()
 	self:open()
 end
 
-function oil.open_horizontal(self)
+function oil:open_horizontal()
 	self:open("horizontal")
+end
+
+function oil:open_buffer()
+  self:open("buffer")
 end
 
 return oil

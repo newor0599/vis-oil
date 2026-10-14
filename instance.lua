@@ -42,6 +42,7 @@ function instance:insert_data()
 	if select_cursor > 2 then
 		vis:feedkeys(tostring(select_cursor).."j")
 	end
+  self.window.file.modified = false
 end
 
 function instance:statusbar(win)
@@ -128,7 +129,17 @@ function instance:init()
 			return
 		end
 
-		self.window:close(true)
+		local closed = self.window:close(true)
+    if not closed then
+      if self.original_file.name ~= nil then
+        vis:command("e! "..self.original_file.path)
+      else
+        self.window.file = nil
+        self.window.file:delete({start=0,finish=self.window.file.size})
+        self.window.file.modified = false
+        self.window:draw()
+      end
+    end
 
 		self:close(self.window)
 	end)
