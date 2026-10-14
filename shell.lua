@@ -1,13 +1,17 @@
 ---Get current working directory based on currently active window
 ---@return string cwd Curretn working directory
 local function get_win_cwd()
-	local cwd = vis.win.file.path
-	if cwd == nil then
-		cwd = io.popen("pwd", "r"):lines("a")()
-	else
-		cwd = cwd:gsub("[^%/]+$", "", 1)
-	end
-	return cwd:match("[^\n]+") .. "/"
+  local cwd = vis.win.file.path
+  if cwd == nil then
+    cwd = io.popen("pwd", "r"):lines("a")()
+  else
+    cwd = cwd:gsub("[^%/]+$", "", 1)
+  end
+  cwd = cwd:match("[^\n]+")
+  if cwd:sub(-1) ~= "/" then
+    cwd = cwd .. "/"
+  end
+  return cwd
 end
 
 local function get_cd_cwd(cd_path)
