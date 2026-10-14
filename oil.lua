@@ -29,6 +29,7 @@ end
 ---@param method? "horizontal"|"vertical" Start oil horizontally/vertically (default)
 function oil:open(method)
 	local cwd = Shell.get_win_cwd()
+	local original_file = vis.win.file
 
 	if method == nil or method == "vertical" then
 		method = "vertical"
@@ -38,13 +39,9 @@ function oil:open(method)
 	end
 
 	local window = vis.win
-	local instance = Instance.new(self, window, cwd)
+	local instance = Instance.new(self, window, cwd, original_file)
 
 	instance:insert_data()
-
-	if instance.window.file.name == nil then
-		vis:feedkeys("gg")
-	end
 end
 
 function oil.open_vertical(self)

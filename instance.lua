@@ -5,7 +5,7 @@
 ---@class instance
 ---@field oil oil
 ---@field cwd string
----@field original_file string
+---@field original_file vis.file
 ---@field window vis.window
 ---@field directory_lines vis.range
 instance = {}
@@ -18,11 +18,12 @@ function instance:insert_data()
 	local entries = Utils.parse_ls(ls_out, self.cwd)
 
 	local window_cursor = 0
-	for _, entry in ipairs(entries) do
+	local select_cursor = 0
+	for index, entry in ipairs(entries) do
+		---@cast entry Entry
 		if self.oil.options["show_hidden"] or not entry["is_hidden"] then
 			if entry["is_dir"] then
-				self.directory_lines.finish = window_cursor
-					+ #entry["display_name"]
+				self.directory_lines.finish = window_cursor + #entry["display_name"]
 			end
 
 			self.window.file:insert(window_cursor, entry["display_name"])
@@ -30,10 +31,17 @@ function instance:insert_data()
 
 			self.window.file:insert(window_cursor, "\n")
 			window_cursor = window_cursor + 1
+
+			if entry.name == self.original_file.name then
+				select_cursor = index - 1
+			end
 		end
 	end
 	self.window:draw()
-	vis:feedkeys("j")
+	vis:feedkeys("gg")
+	if select_cursor > 2 then
+		vis:feedkeys(tostring(select_cursor).."j")
+	end
 end
 
 function instance:statusbar(win)
@@ -120,9 +128,7 @@ function instance:init()
 			return
 		end
 
-		if self.original_file == nil then
-			self.window:close(true)
-		end
+		self.window:close(true)
 
 		self:close(self.window)
 	end)
@@ -139,11 +145,11 @@ end
 ---@param oil oil Main class
 ---@param window vis.window A designated window to start a new instance
 ---@param cwd string Start a new instance at a given working directory
-function instance.new(oil, window, cwd)
+function instance.new(oil, window, cwd, original_file)
 	local new = {
 		oil = oil,
 		cwd = cwd,
-		original_file = window.file.path,
+		original_file = original_file,
 		window = window,
 		directory_lines = { start = 0, finish = 1 },
 	}
