@@ -15,20 +15,20 @@ local function get_win_cwd()
 end
 
 local function get_cd_cwd(cd_path)
-	local pwd = io.popen("cd " .. cd_path .. ";pwd", "r"):lines("a")()
-	return pwd:match("[^\n]+") .. "/"
+  local pwd = io.popen("cd " .. cd_path .. ";pwd", "r"):lines("a")()
+  return pwd:match("[^\n]+") .. "/"
 end
 
 ---@param cwd string Current working directory to list
 ---@return string # output of ls
 local function get_ls(cwd)
-	local ls_out = io.popen("ls -lapQ --group-directories-first " .. cwd)
-		:lines("a")()
-	return ls_out
+  local ls_out = io.popen("ls -lapQ --group-directories-first " .. cwd)
+    :lines("a")()
+  return ls_out
 end
 
 return {
-	get_cd_cwd = get_cd_cwd,
-	get_win_cwd = get_win_cwd,
-	get_ls = get_ls,
+  get_cd_cwd = get_cd_cwd,
+  get_win_cwd = get_win_cwd,
+  get_ls = get_ls,
 }
