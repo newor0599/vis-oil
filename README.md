@@ -30,7 +30,7 @@ With vis-plug
 ```
 
 
-### Usage
+### Configuration
 ```lua
 -- Show hidden files
 oil.options.show_hidden = true
@@ -43,4 +43,16 @@ oil:map_open_vertical(" vv")
 
 -- Map <Space>hh to open oil in a new horizontal window
 oil:map_open_horizontal(" hh")
+```
+
+### Command usage
+```lua
+-- open oil at current buffer
+:oil open_buffer
+
+-- open oil vertically
+:oil open_vertical
+
+-- open oil horizontally
+:oil open_horizontal
 ```

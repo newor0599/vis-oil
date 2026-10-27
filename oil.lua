@@ -103,4 +103,16 @@ vis:map(vis.modes.NORMAL, oil.keybinds.open_horizontal, oil.open_horizontal)
 vis:map(vis.modes.NORMAL, oil.keybinds.open_vertical, oil.open_vertical)
 vis:map(vis.modes.NORMAL, oil.keybinds.open_buffer, oil.open_buffer)
 
+vis:command_register("oil",function (argv, force, win, selection, range)
+  if argv[1] == "open_buffer" then
+    oil.open_buffer()
+  end
+  if argv[1] == "open_vertical" then
+    oil.open_vertical()
+  end
+  if argv[1] == "open_horizontal" then
+    oil.open_horizontal()
+  end
+end)
+
 return oil
