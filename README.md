@@ -1,6 +1,44 @@
-Very early stage
+# vis-oil
 
-Whats implemented
+> ⚠️ **Very early stage.** Expect bugs, missing features, and breaking changes.
+> ⚠️ Not working on windows
+
+An [`oil.nvim`](https://github.com/stevearc/oil.nvim)-inspired file manager
+plugin for the [Vis](https://github.com/martanne/vis) editor.
+
+Edit your filesystem like a text buffer.
+
+### Whats implemented
 - List cwd
 - Traverse directory
 - Open file
+
+### Planned
+- Copy
+- Delete
+- Rename
+- Create
+- Move
+- Windows support
+
+### Installation
+With vis-plug
+```lua
+{ "newor0599/vis-oil", alias="oil" },
+```
+
+
+### Usage
+```lua
+-- Show hidden files
+oil.options.show_hidden = true
+
+-- Map <Space>e to open oil in current buffer
+oil:map_open_buffer(" e")
+
+-- Map <Space>vv to open oil in a new vertical window
+oil:map_open_vertical(" vv")
+
+-- Map <Space>hh to open oil in a new horizontal window
+oil:map_open_horizontal(" hh")
+```
