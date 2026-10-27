@@ -65,7 +65,6 @@ function oil:map_open_horizontal(key)
   vis:map(vis.modes.NORMAL, self.keybinds.open_horizontal, oil.open_horizontal)
 end
 
-
 ---@param method? "horizontal"|"vertical"|"buffer" Start oil at current buffer/horizontally/vertically (default)
 function oil:open(method)
   local cwd = Shell.get_win_cwd()
@@ -103,7 +102,7 @@ vis:map(vis.modes.NORMAL, oil.keybinds.open_horizontal, oil.open_horizontal)
 vis:map(vis.modes.NORMAL, oil.keybinds.open_vertical, oil.open_vertical)
 vis:map(vis.modes.NORMAL, oil.keybinds.open_buffer, oil.open_buffer)
 
-vis:command_register("oil",function (argv, force, win, selection, range)
+vis:command_register("oil", function(argv, force, win, selection, range)
   if argv[1] == "open_buffer" then
     oil.open_buffer()
   end

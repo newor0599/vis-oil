@@ -22,8 +22,8 @@ local function get_ls(cwd)
   return ls_out
 end
 
-function can_access_path(path)
-  data = io.popen('test -r "' .. path .. '" && echo "yes" || echo "no"')
+local function can_access_path(path)
+  local data = io.popen('test -r "' .. path .. '" && echo "yes" || echo "no"')
     :lines("a")()
   return data:match("yes") ~= nil
 end
