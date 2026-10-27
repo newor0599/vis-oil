@@ -1,1 +1,1 @@
-require("vis-oil.oil")
+return require("vis-oil.oil")

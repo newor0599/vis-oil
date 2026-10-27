@@ -40,6 +40,7 @@ function instance:insert_data()
   self.window:draw()
   vis:feedkeys("gg")
   if select_cursor > 2 then
+    select_cursor = select_cursor - 1
     vis:feedkeys(tostring(select_cursor) .. "j")
   end
   self.window.file.modified = false
@@ -124,7 +125,7 @@ function instance:init()
 
   vis.events.subscribe(vis.events.WIN_CLOSE, self.close_handler)
 
-  self.window:map(vis.modes.NORMAL, "q", function()
+  self.window:map(vis.modes.NORMAL, self.oil.keybinds.quit, function()
     if not self.window then
       return
     end
@@ -144,11 +145,11 @@ function instance:init()
     self:close(self.window)
   end)
 
-  self.window:map(vis.modes.NORMAL, "<Enter>", function()
+  self.window:map(vis.modes.NORMAL, self.oil.keybinds.interact, function()
     self:interact_entry()
   end)
 
-  self.window:map(vis.modes.NORMAL, "c", function()
+  self.window:map(vis.modes.NORMAL, self.oil.keybinds.print_cwd, function()
     vis:info(self.cwd)
   end)
 end

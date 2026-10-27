@@ -21,6 +21,33 @@ oil.options = {
   show_hidden = false,
 }
 
+oil.keybinds = {
+  interact = "<Enter>",
+  print_cwd = "c",
+  quit = "q",
+}
+
+function oil:map_interact(key)
+  self.keybinds.interact = key
+end
+function oil:map_print_cwd(key)
+  self.keybinds.print_cwd = key
+end
+function oil:map_quit(key)
+  self.keybinds.quit = key
+end
+function oil:map_open_buffer(key)
+  vis:map(vis.modes.NORMAL,key,oil.open_buffer)
+end
+
+function oil:map_open_vertical(key)
+  vis:map(vis.modes.NORMAL,key,oil.open_vertical)
+end
+
+function oil:map_open_horizontal(key)
+  vis:map(vis.modes.NORMAL,key,oil.open_horizontal)
+end
+
 function oil:make_file_id()
   self.file_ids = self.file_ids + 1
   return self.file_ids
@@ -47,16 +74,16 @@ function oil:open(method)
   instance:insert_data()
 end
 
-function oil:open_vertical()
-  self:open()
+function oil.open_vertical()
+  oil:open()
 end
 
-function oil:open_horizontal()
-  self:open("horizontal")
+function oil.open_horizontal()
+  oil:open("horizontal")
 end
 
-function oil:open_buffer()
-  self:open("buffer")
+function oil.open_buffer()
+  oil:open("buffer")
 end
 
 return oil
