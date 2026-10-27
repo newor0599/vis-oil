@@ -3,6 +3,8 @@
 > ⚠️ **Very early stage.** Expect bugs, missing features, and breaking changes.
 > ⚠️ Not working on windows
 
+![preview image](preview.png)
+
 An [`oil.nvim`](https://github.com/stevearc/oil.nvim)-inspired file manager
 plugin for the [Vis](https://github.com/martanne/vis) editor.
 
