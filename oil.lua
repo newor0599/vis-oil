@@ -25,33 +25,46 @@ oil.keybinds = {
   interact = "<Enter>",
   print_cwd = "c",
   quit = "q",
+  goto_parent = "H",
+  open_buffer = " e",
+  open_vertical = " vv",
+  open_horizontal = " hh",
 }
 
 function oil:map_interact(key)
   self.keybinds.interact = key
 end
+
 function oil:map_print_cwd(key)
   self.keybinds.print_cwd = key
 end
+
 function oil:map_quit(key)
   self.keybinds.quit = key
 end
+
+function oil:map_goto_parent(key)
+  self.keybinds.goto_parent = key
+end
+
 function oil:map_open_buffer(key)
-  vis:map(vis.modes.NORMAL,key,oil.open_buffer)
+  vis:unmap(vis.modes.NORMAL, self.keybinds.open_buffer)
+  self.keybinds.open_buffer = key
+  vis:map(vis.modes.NORMAL, self.keybinds.open_buffer, oil.open_buffer)
 end
 
 function oil:map_open_vertical(key)
-  vis:map(vis.modes.NORMAL,key,oil.open_vertical)
+  vis:unmap(vis.modes.NORMAL, self.keybinds.open_vertical)
+  self.keybinds.open_vertical = key
+  vis:map(vis.modes.NORMAL, self.keybinds.open_vertical, oil.open_vertical)
 end
 
 function oil:map_open_horizontal(key)
-  vis:map(vis.modes.NORMAL,key,oil.open_horizontal)
+  vis:unmap(vis.modes.NORMAL, self.keybinds.open_horizontal)
+  self.keybinds.open_horizontal = key
+  vis:map(vis.modes.NORMAL, self.keybinds.open_horizontal, oil.open_horizontal)
 end
 
-function oil:make_file_id()
-  self.file_ids = self.file_ids + 1
-  return self.file_ids
-end
 
 ---@param method? "horizontal"|"vertical"|"buffer" Start oil at current buffer/horizontally/vertically (default)
 function oil:open(method)
@@ -60,11 +73,11 @@ function oil:open(method)
 
   if method == nil or method == "vertical" then
     method = "vertical"
-    vis:command("vsplit")
+    vis:command("vsplit Oil")
   elseif method == "horizontal" then
-    vis:command("split")
+    vis:command("split Oil")
   elseif method == "buffer" then
-    vis.win.file = ""
+    vis.win.file = "Oil"
     vis.win:set_syntax("text")
   end
 
@@ -85,5 +98,9 @@ end
 function oil.open_buffer()
   oil:open("buffer")
 end
+
+vis:map(vis.modes.NORMAL, oil.keybinds.open_horizontal, oil.open_horizontal)
+vis:map(vis.modes.NORMAL, oil.keybinds.open_vertical, oil.open_vertical)
+vis:map(vis.modes.NORMAL, oil.keybinds.open_buffer, oil.open_buffer)
 
 return oil

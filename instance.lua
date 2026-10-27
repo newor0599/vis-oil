@@ -11,6 +11,14 @@
 instance = {}
 instance.__index = instance
 
+function instance:cd(path)
+  if Shell.can_access_path(path) then
+    self.cwd = path
+    return true
+  end
+  return false
+end
+
 function instance:insert_data()
   self.window.file:delete({ start = 0, finish = self.window.file.size })
 
@@ -46,18 +54,6 @@ function instance:insert_data()
   self.window.file.modified = false
 end
 
-function instance:statusbar(win)
-  if self.window ~= win then
-    return
-  end
-
-  local content = "Oil"
-  if self.window.file.modified then
-    content = content .. " [+]"
-  end
-  self.window:status(content)
-end
-
 function instance:highlight(win)
   if self.window == win then
     self.window:style(
@@ -75,7 +71,6 @@ function instance:close(win)
 
   self.window = nil
 
-  vis.events.unsubscribe(vis.events.WIN_STATUS, self.statusbar_handler)
   vis.events.unsubscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
   vis.events.unsubscribe(vis.events.WIN_CLOSE, self.close_handler)
 end
@@ -98,19 +93,30 @@ function instance:interact_entry()
   local is_dir = entry_name:sub(-1) == "/"
   entry_name = entry_name:gsub(" %-%> .*", "")
   entry_name = entry_name:gsub(" ", "\\ ")
+
+  local cwd = Shell.get_cd_cwd(self.cwd .. entry_name):gsub(" ", "\\ ")
+  if #cwd == 0 then
+    vis:info("No permission to access this path")
+    return
+  end
   if is_dir then
-    self.cwd = Shell.get_cd_cwd(self.cwd .. entry_name):gsub(" ", "\\ ")
+    self:cd(cwd)
     self:insert_data()
   else
-    vis:command("e! " .. self.cwd .. entry_name)
+    vis:command("e! " .. cwd)
   end
 end
 
-function instance:init()
-  self.statusbar_handler = function(win)
-    self:statusbar(win)
+function instance:goto_parent()
+  local cwd = Shell.get_cd_cwd(self.cwd .. ".."):gsub(" ", "\\ ")
+  if self:cd(cwd) then
+    self:insert_data()
+    return
   end
+  vis:info("No permission to access this path")
+end
 
+function instance:init()
   self.highlight_handler = function(win)
     self:highlight(win)
   end
@@ -121,9 +127,11 @@ function instance:init()
 
   vis.events.subscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
 
-  vis.events.subscribe(vis.events.WIN_STATUS, self.statusbar_handler)
-
   vis.events.subscribe(vis.events.WIN_CLOSE, self.close_handler)
+
+  self.window:map(vis.modes.NORMAL, self.oil.keybinds.goto_parent, function()
+    self:goto_parent()
+  end)
 
   self.window:map(vis.modes.NORMAL, self.oil.keybinds.quit, function()
     if not self.window then
@@ -135,7 +143,7 @@ function instance:init()
       if self.original_file.name ~= nil then
         vis:command("e! " .. self.original_file.path)
       else
-        self.window.file = nil
+        self.window.file = ""
         self.window.file:delete({ start = 0, finish = self.window.file.size })
         self.window.file.modified = false
         self.window:draw()

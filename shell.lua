@@ -14,11 +14,6 @@ local function get_win_cwd()
   return cwd
 end
 
-local function get_cd_cwd(cd_path)
-  local pwd = io.popen("cd " .. cd_path .. ";pwd", "r"):lines("a")()
-  return pwd:match("[^\n]+") .. "/"
-end
-
 ---@param cwd string Current working directory to list
 ---@return string # output of ls
 local function get_ls(cwd)
@@ -27,8 +22,23 @@ local function get_ls(cwd)
   return ls_out
 end
 
+function can_access_path(path)
+  data = io.popen('test -r "' .. path .. '" && echo "yes" || echo "no"')
+    :lines("a")()
+  return data:match("yes") ~= nil
+end
+
+local function get_cd_cwd(cd_path)
+  if can_access_path(cd_path) then
+    local pwd = io.popen("cd " .. cd_path .. ";pwd", "r"):lines("a")()
+    return pwd:match("[^\n]+") .. "/"
+  end
+  return ""
+end
+
 return {
   get_cd_cwd = get_cd_cwd,
   get_win_cwd = get_win_cwd,
   get_ls = get_ls,
+  can_access_path = can_access_path,
 }
