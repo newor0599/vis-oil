@@ -12,9 +12,6 @@ Instance = require("vis-oil.instance")
 oil = {
   DIR_COLOR = vis.ui:style_push("fore:#95AEC7,back:#1C2023"),
   SYM_COLOR = vis.ui:style_push("fore:#C7C795,back:#1C2023"),
-  INSTANCE_EXIT_EVENT = "OIL_INSTANCE_EXIT",
-  file_ids = 0,
-  instances = {},
 }
 
 oil.options = {
@@ -102,7 +99,7 @@ vis:map(vis.modes.NORMAL, oil.keybinds.open_horizontal, oil.open_horizontal)
 vis:map(vis.modes.NORMAL, oil.keybinds.open_vertical, oil.open_vertical)
 vis:map(vis.modes.NORMAL, oil.keybinds.open_buffer, oil.open_buffer)
 
-vis:command_register("oil", function(argv, force, win, selection, range)
+vis:command_register("oil", function(argv)
   if argv[1] == "open_buffer" then
     oil.open_buffer()
   end

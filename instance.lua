@@ -94,8 +94,9 @@ function instance:interact_entry()
   entry_name = entry_name:gsub(" %-%> .*", "")
   entry_name = entry_name:gsub(" ", "\\ ")
 
-  local cwd = Shell.get_cd_cwd(self.cwd .. entry_name):gsub(" ", "\\ ")
-  if #cwd == 0 then
+  local cwd = Utils.normalize_path(self.cwd .. entry_name)
+  local can_access = Shell.can_access_path(cwd)
+  if not can_access then
     vis:info("No permission to access this path")
     return
   end
@@ -108,7 +109,7 @@ function instance:interact_entry()
 end
 
 function instance:goto_parent()
-  local cwd = Shell.get_cd_cwd(self.cwd .. ".."):gsub(" ", "\\ ")
+  local cwd = Utils.normalize_path(self.cwd .. "../")
   if self:cd(cwd) then
     self:insert_data()
     return
@@ -173,7 +174,7 @@ function instance.new(oil, window, cwd, original_file)
     window = window,
     directory_lines = { start = 0, finish = 1 },
   }
-  setmetatable(new, { __index = instance })
+  setmetatable(new, instance)
 
   new:init()
 

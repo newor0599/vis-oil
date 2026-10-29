@@ -52,7 +52,38 @@ local function copy_vis_file(vis_file)
   }
 end
 
+---@param path string
+local function normalize_path(path)
+  if path == "" then
+    return "."
+  end
+  local absolute = path:sub(1, 1) == "/"
+  local is_dir = path:sub(-1) == "/"
+  local parts = {}
+
+  for seg in path:gmatch("[^/]+") do
+    if seg == "." then
+    elseif seg == ".." then
+      if #parts > 0 and parts[#parts] ~= ".." then
+        table.remove(parts)
+      elseif not absolute then
+        parts[#parts + 1] = ".."
+      end
+    else
+      parts[#parts + 1] = seg
+    end
+  end
+  local joined = table.concat(parts, "/")
+  joined = joined .. (is_dir and "/"  or "")
+  joined = (absolute and "/" or "") .. joined
+  if joined == "" then
+    return "."
+  end
+  return joined
+end
+
 return {
   parse_ls = parse_ls,
   copy_vis_file = copy_vis_file,
+  normalize_path = normalize_path,
 }

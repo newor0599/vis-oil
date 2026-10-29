@@ -28,16 +28,7 @@ local function can_access_path(path)
   return data:match("yes") ~= nil
 end
 
-local function get_cd_cwd(cd_path)
-  if can_access_path(cd_path) then
-    local pwd = io.popen("cd " .. cd_path .. ";pwd", "r"):lines("a")()
-    return pwd:match("[^\n]+") .. "/"
-  end
-  return ""
-end
-
 return {
-  get_cd_cwd = get_cd_cwd,
   get_win_cwd = get_win_cwd,
   get_ls = get_ls,
   can_access_path = can_access_path,

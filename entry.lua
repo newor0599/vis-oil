@@ -51,7 +51,7 @@ function Entry.new(
   end
 
   return {
-    path = cwd .. file_name,
+    path = cwd,
     is_dir = is_dir,
     type = type,
     size = size,
