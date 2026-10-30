@@ -149,8 +149,8 @@ function instance:init()
   self.highlight_handler = function()
     self:highlight()
   end
-  
-  self.close_handler = function (win)
+
+  self.close_handler = function(win)
     self:window_closed(win)
   end
 
