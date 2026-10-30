@@ -75,12 +75,21 @@ function instance:end_instance()
   if self.window == nil then
     return
   end
+  vis.events.unsubscribe(vis.events.WIN_CLOSE, self.close_handler)
   vis.events.unsubscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.goto_parent)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.interact)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.quit)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.print_cwd)
   self = nil
+end
+
+function instance:window_closed(win)
+  if win ~= self.window then
+    return
+  end
+  vis.events.unsubscribe(vis.events.WIN_CLOSE, self.close_handler)
+  vis.events.unsubscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
 end
 
 function instance:clear_data()
@@ -140,8 +149,13 @@ function instance:init()
   self.highlight_handler = function()
     self:highlight()
   end
+  
+  self.close_handler = function (win)
+    self:window_closed(win)
+  end
 
   vis.events.subscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
+  vis.events.subscribe(vis.events.WIN_CLOSE, self.close_handler)
 
   self.window:map(vis.modes.NORMAL, self.oil.keybinds.goto_parent, function()
     self:goto_parent()
