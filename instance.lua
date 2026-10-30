@@ -83,6 +83,16 @@ function instance:end_instance()
   self = nil
 end
 
+function instance:clear_data()
+  for window in vis:windows() do
+    ---@cast window vis.window
+    if tostring(window.file.name):find("^Oil %d+$") then
+      return
+    end
+  end
+  self.oil.window_ids = 0
+end
+
 function instance:get_cursor_entry()
   local y = self.window.selection.line
   local x = self.window.selection.col
@@ -150,6 +160,7 @@ function instance:init()
     then
       self:end_instance()
       vis:command("e! " .. self.original_file.path:gsub(" ", "\\ "))
+      self:clear_data()
       return
     end
 
@@ -159,6 +170,7 @@ function instance:init()
     self.window.file.modified = false
     self.window:draw()
     self:end_instance()
+    self:clear_data()
   end)
 
   self.window:map(vis.modes.NORMAL, self.oil.keybinds.interact, function()
