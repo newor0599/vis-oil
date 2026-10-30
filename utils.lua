@@ -81,7 +81,7 @@ local function normalize_path(path)
     end
   end
   local joined = table.concat(parts, "/")
-  joined = joined .. (is_dir and "/"  or "")
+  joined = joined .. (is_dir and "/" or "")
   joined = (absolute and "/" or "") .. joined
   if joined == "" then
     return "."
