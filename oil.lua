@@ -12,7 +12,13 @@ Instance = require("vis-oil.instance")
 oil = {
   DIR_COLOR = vis.ui:style_push("fore:#95AEC7,back:#1C2023"),
   SYM_COLOR = vis.ui:style_push("fore:#C7C795,back:#1C2023"),
+  window_ids = 0,
 }
+
+function oil:make_window_id()
+  self.window_ids = self.window_ids + 1
+  return self.window_ids
+end
 
 oil.options = {
   show_hidden = false,
@@ -64,20 +70,27 @@ end
 
 ---@param method? "horizontal"|"vertical"|"buffer" Start oil at current buffer/horizontally/vertically (default)
 function oil:open(method)
+  local window_id = self:make_window_id()
+  local window_name = "Oil " .. tostring(window_id)
   local cwd = Shell.get_win_cwd()
-  local original_file = Utils.copy_vis_file(vis.win.file)
+  local original_file = Utils.copy_vis_file()
 
   if method == nil or method == "vertical" then
     method = "vertical"
-    vis:command("vsplit Oil")
+    vis:command("vnew")
   elseif method == "horizontal" then
-    vis:command("split Oil")
+    vis:command("new")
   elseif method == "buffer" then
-    vis.win.file = "Oil"
+    original_file = Utils.copy_vis_file(vis.win.file)
     vis.win:set_syntax("text")
   end
 
+  if tostring(vis.win.file.name):find("^Oil %d+$") then
+    return
+  end
+
   local window = vis.win
+  window.file = window_name
   local instance = Instance.new(self, window, cwd, original_file)
 
   instance:insert_data()

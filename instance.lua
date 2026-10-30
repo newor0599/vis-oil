@@ -27,9 +27,12 @@ function instance:insert_data()
 
   local window_cursor = 0
   local select_cursor = 0
-  for index, entry in ipairs(entries) do
+  local visible_lines = 0
+  local original_file_name = self.original_file.name:gmatch("[^%/]+$")()
+  for _, entry in ipairs(entries) do
     ---@cast entry Entry
     if self.oil.options["show_hidden"] or not entry["is_hidden"] then
+      visible_lines = visible_lines + 1
       if entry["is_dir"] then
         self.directory_lines.finish = window_cursor + #entry["display_name"]
       end
@@ -40,39 +43,44 @@ function instance:insert_data()
       self.window.file:insert(window_cursor, "\n")
       window_cursor = window_cursor + 1
 
-      if entry.name == self.original_file.name then
-        select_cursor = index - 1
+      if entry.name == original_file_name then
+        select_cursor = visible_lines
       end
     end
   end
   self.window:draw()
+  vis.win = self.window
   vis:feedkeys("gg")
   if select_cursor > 2 then
-    select_cursor = select_cursor - 1
-    vis:feedkeys(tostring(select_cursor) .. "j")
+    vis:feedkeys(tostring(select_cursor) .. "G")
   end
   self.window.file.modified = false
 end
 
-function instance:highlight(win)
-  if self.window == win then
-    self.window:style(
-      self.oil.DIR_COLOR,
-      self.directory_lines.start,
-      self.directory_lines.finish
-    )
-  end
-end
-
-function instance:close(win)
-  if self.window ~= win then
+function instance:highlight()
+  if self.window == nil then
     return
   end
+  if self.window.style == nil then
+    return
+  end
+  self.window:style(
+    self.oil.DIR_COLOR,
+    self.directory_lines.start,
+    self.directory_lines.finish
+  )
+end
 
-  self.window = nil
-
+function instance:end_instance()
+  if self.window == nil then
+    return
+  end
   vis.events.unsubscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
-  vis.events.unsubscribe(vis.events.WIN_CLOSE, self.close_handler)
+  self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.goto_parent)
+  self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.interact)
+  self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.quit)
+  self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.print_cwd)
+  self = nil
 end
 
 function instance:get_cursor_entry()
@@ -104,6 +112,7 @@ function instance:interact_entry()
     self:cd(cwd)
     self:insert_data()
   else
+    self:end_instance()
     vis:command("e! " .. cwd)
   end
 end
@@ -118,17 +127,11 @@ function instance:goto_parent()
 end
 
 function instance:init()
-  self.highlight_handler = function(win)
-    self:highlight(win)
-  end
-
-  self.close_handler = function(win)
-    self:close(win)
+  self.highlight_handler = function()
+    self:highlight()
   end
 
   vis.events.subscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
-
-  vis.events.subscribe(vis.events.WIN_CLOSE, self.close_handler)
 
   self.window:map(vis.modes.NORMAL, self.oil.keybinds.goto_parent, function()
     self:goto_parent()
@@ -139,19 +142,23 @@ function instance:init()
       return
     end
 
-    local closed = self.window:close(true)
-    if not closed then
-      if self.original_file.name ~= nil then
-        vis:command("e! " .. self.original_file.path)
-      else
-        self.window.file = ""
-        self.window.file:delete({ start = 0, finish = self.window.file.size })
-        self.window.file.modified = false
-        self.window:draw()
-      end
+    -- Restore original file
+    if
+      self.original_file.name ~= nil
+      and self.original_file.name ~= ""
+      and self.original_file.name ~= self.window.file.name
+    then
+      self:end_instance()
+      vis:command("e! " .. self.original_file.path:gsub(" ", "\\ "))
+      return
     end
 
-    self:close(self.window)
+    -- Empty buffer
+    self.window.file = ""
+    self.window.file:delete({ start = 0, finish = self.window.file.size })
+    self.window.file.modified = false
+    self.window:draw()
+    self:end_instance()
   end)
 
   self.window:map(vis.modes.NORMAL, self.oil.keybinds.interact, function()
@@ -166,6 +173,7 @@ end
 ---@param oil oil Main class
 ---@param window vis.window A designated window to start a new instance
 ---@param cwd string Start a new instance at a given working directory
+---@param original_file table A vis.window.file copied with utils.copy_vis_file
 function instance.new(oil, window, cwd, original_file)
   local new = {
     oil = oil,

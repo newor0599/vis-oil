@@ -43,12 +43,19 @@ local function parse_ls(ls_out, cwd)
 end
 
 ---Copy some element of vis.file to a table
----@param vis_file vis.file
+---@param vis_file? vis.file
 local function copy_vis_file(vis_file)
+  if vis_file == nil then
+    return {
+      name = "",
+      path = "",
+      size = 0,
+    }
+  end
   return {
-    name = vis_file.name,
-    path = vis_file.path,
-    size = vis_file.size,
+    name = vis_file.name or "",
+    path = vis_file.path or "",
+    size = vis_file.size or 0,
   }
 end
 
