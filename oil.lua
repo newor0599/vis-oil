@@ -81,6 +81,18 @@ function oil:open(method)
   elseif method == "horizontal" then
     vis:command("new")
   elseif method == "buffer" then
+    if vis.win.file.modified then
+      local ans = Utils.prompt_user("Save changes?", { "Yes", "No", "Cancel" })
+      if ans == nil then
+        return
+      end
+      if ans == "Cancel" then
+        return
+      elseif ans == "No" then
+      else
+        vis:command("w")
+      end
+    end
     original_file = Utils.copy_vis_file(vis.win.file)
     vis.win:set_syntax("text")
   end

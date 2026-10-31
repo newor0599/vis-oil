@@ -89,8 +89,37 @@ local function normalize_path(path)
   return joined
 end
 
+---Prompt user question with vis-menu
+---@param prompt string The title of the prompt
+---@param choices table A list of choice
+---@return string?
+local function prompt_user(prompt,choices)
+  choices = table.concat(choices,"\n")
+
+  local cmd = "vis-menu"
+
+  if prompt then
+    cmd = cmd .. ' -p \'' .. prompt .. '\''
+  end
+
+  local choice = nil
+  local status, output = vis:pipe(choices, cmd)
+  if status == 0 then
+    -- trim newline from selection
+    if output:sub(-1) == '\n' then
+      choice = output:sub(1, -2)
+    else
+      choice = output
+    end
+  end
+
+  vis:redraw()
+  return choice
+end
+
 return {
   parse_ls = parse_ls,
   copy_vis_file = copy_vis_file,
   normalize_path = normalize_path,
+  prompt_user = prompt_user,
 }
