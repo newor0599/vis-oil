@@ -120,6 +120,9 @@ function instance:interact_entry()
   local is_dir = entry_name:sub(-1) == "/"
   entry_name = entry_name:gsub(" %-%> .*", "")
   entry_name = entry_name:gsub(" ", "\\ ")
+  if #entry_name <= 0 then
+    return
+  end
 
   local cwd = Utils.normalize_path(self.cwd .. entry_name)
   local can_access = Shell.can_access_path(cwd)
