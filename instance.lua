@@ -5,7 +5,7 @@
 ---@class instance
 ---@field oil oil
 ---@field cwd string
----@field original_file vis.file
+---@field original_file string
 ---@field window vis.window
 ---@field directory_lines vis.range
 instance = {}
@@ -28,7 +28,7 @@ function instance:insert_data()
   local window_cursor = 0
   local select_cursor = 0
   local visible_lines = 0
-  local original_file_name = self.original_file.name:gmatch("[^%/]+$")()
+  local original_file_name = tostring(self.original_file):gmatch("[^%/]+$")()
   for _, entry in ipairs(entries) do
     ---@cast entry Entry
     if self.oil.options["show_hidden"] or not entry["is_hidden"] then
@@ -119,7 +119,6 @@ function instance:interact_entry()
   local entry_name = self:get_cursor_entry()
   local is_dir = entry_name:sub(-1) == "/"
   entry_name = entry_name:gsub(" %-%> .*", "")
-  entry_name = entry_name:gsub(" ", "\\ ")
   if #entry_name <= 0 then
     return
   end
@@ -135,7 +134,7 @@ function instance:interact_entry()
     self:insert_data()
   else
     self:end_instance()
-    vis:command("e! " .. cwd)
+    vis:command('e! "' .. cwd .. '"')
   end
 end
 
@@ -170,13 +169,9 @@ function instance:init()
     end
 
     -- Restore original file
-    if
-      self.original_file.name ~= nil
-      and self.original_file.name ~= ""
-      and self.original_file.name ~= self.window.file.name
-    then
+    if self.original_file then
       self:end_instance()
-      vis:command("e! " .. self.original_file.path:gsub(" ", "\\ "))
+      vis:command('e! "' .. self.original_file .. '"')
       self:clear_data()
       return
     end
@@ -202,7 +197,7 @@ end
 ---@param oil oil Main class
 ---@param window vis.window A designated window to start a new instance
 ---@param cwd string Start a new instance at a given working directory
----@param original_file table A vis.window.file copied with utils.copy_vis_file
+---@param original_file? string Path to original file if available
 function instance.new(oil, window, cwd, original_file)
   local new = {
     oil = oil,

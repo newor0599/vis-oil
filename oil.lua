@@ -7,6 +7,8 @@ Entry = require("vis-oil.entry")
 Utils = require("vis-oil.utils")
 Shell = require("vis-oil.shell")
 Instance = require("vis-oil.instance")
+Help = require("vis-oil.help")
+
 ---Main class for oil
 ---@class oil
 oil = {
@@ -73,7 +75,7 @@ function oil:open(method)
   local window_id = self:make_window_id()
   local window_name = "Oil " .. tostring(window_id)
   local cwd = Shell.get_win_cwd()
-  local original_file = Utils.copy_vis_file()
+  local original_file = nil
 
   if method == nil or method == "vertical" then
     method = "vertical"
@@ -93,7 +95,9 @@ function oil:open(method)
         vis:command("w")
       end
     end
-    original_file = Utils.copy_vis_file(vis.win.file)
+    if vis.win.file.name then
+      original_file = vis.win.file.path
+    end
     vis.win:set_syntax("text")
   end
 
@@ -104,6 +108,7 @@ function oil:open(method)
   local window = vis.win
   window.file = window_name
   local instance = Instance.new(self, window, cwd, original_file)
+  window.oil = instance
 
   instance:insert_data()
 end
@@ -120,20 +125,39 @@ function oil.open_buffer()
   oil:open("buffer")
 end
 
-vis:map(vis.modes.NORMAL, oil.keybinds.open_horizontal, oil.open_horizontal)
-vis:map(vis.modes.NORMAL, oil.keybinds.open_vertical, oil.open_vertical)
-vis:map(vis.modes.NORMAL, oil.keybinds.open_buffer, oil.open_buffer)
+function oil.init()
+  vis:map(vis.modes.NORMAL, oil.keybinds.open_horizontal, oil.open_horizontal)
+  vis:map(vis.modes.NORMAL, oil.keybinds.open_vertical, oil.open_vertical)
+  vis:map(vis.modes.NORMAL, oil.keybinds.open_buffer, oil.open_buffer)
+end
 
 vis:command_register("oil", function(argv)
-  if argv[1] == "open_buffer" then
-    oil.open_buffer()
+  if argv[1] == "debug" then
+    if argv[2] == "window" then
+      local win = vis.win
+      if win.oil then
+        vis:message("Original file: " .. (win.oil.original_file or "NaN"))
+      else
+        vis:message("Not an oil window")
+      end
+      vis.win = win
+    end
   end
-  if argv[1] == "open_vertical" then
-    oil.open_vertical()
+  if argv[1] == "help" then
+    vis:message(Help.message)
   end
-  if argv[1] == "open_horizontal" then
-    oil.open_horizontal()
+  if argv[1] == "open" then
+    if argv[2] == "buffer" then
+      oil.open_buffer()
+    end
+    if argv[2]:sub(1, 1) == "v" then
+      oil.open_vertical()
+    end
+    if argv[2]:sub(1, 1) == "h" then
+      oil.open_horizontal()
+    end
   end
 end)
 
+setmetatable(oil, { __call = oil.init })
 return oil

@@ -1,8 +1,9 @@
 require("vis-oil.entry")
+local M = {}
 
 ---@param ls_out string Output of `ls -laQ`
 ---@param cwd string Current working directory
-local function parse_ls(ls_out, cwd)
+function M.parse_ls(ls_out, cwd)
   local _, header_end = ls_out:find("^total %d+\n")
   ls_out = ls_out:sub(header_end + 1, #ls_out - 1)
 
@@ -42,25 +43,8 @@ local function parse_ls(ls_out, cwd)
   return entries
 end
 
----Copy some element of vis.file to a table
----@param vis_file? vis.file
-local function copy_vis_file(vis_file)
-  if vis_file == nil then
-    return {
-      name = "",
-      path = "",
-      size = 0,
-    }
-  end
-  return {
-    name = vis_file.name or "",
-    path = vis_file.path or "",
-    size = vis_file.size or 0,
-  }
-end
-
 ---@param path string
-local function normalize_path(path)
+function M.normalize_path(path)
   if path == "" then
     return "."
   end
@@ -93,20 +77,20 @@ end
 ---@param prompt string The title of the prompt
 ---@param choices table A list of choice
 ---@return string?
-local function prompt_user(prompt,choices)
-  choices = table.concat(choices,"\n")
+function M.prompt_user(prompt, choices)
+  choices = table.concat(choices, "\n")
 
   local cmd = "vis-menu"
 
   if prompt then
-    cmd = cmd .. ' -p \'' .. prompt .. '\''
+    cmd = cmd .. " -p '" .. prompt .. "'"
   end
 
   local choice = nil
   local status, output = vis:pipe(choices, cmd)
   if status == 0 then
     -- trim newline from selection
-    if output:sub(-1) == '\n' then
+    if output:sub(-1) == "\n" then
       choice = output:sub(1, -2)
     else
       choice = output
@@ -117,9 +101,4 @@ local function prompt_user(prompt,choices)
   return choice
 end
 
-return {
-  parse_ls = parse_ls,
-  copy_vis_file = copy_vis_file,
-  normalize_path = normalize_path,
-  prompt_user = prompt_user,
-}
+return M
