@@ -1,7 +1,10 @@
 # vis-oil
 
-> ⚠️ **Very early stage.** Expect bugs, missing features, and breaking changes.
+> ⚠️ **Very early stage.** Expect bugs, missing features, breaking changes and security issues.
+
 > ⚠️ Not working on windows
+
+> ⚠️ There is a possible security vulnerebility of **command injection** attack, BEWARE!
 
 ![preview image](preview.png)
 

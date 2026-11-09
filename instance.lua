@@ -7,7 +7,7 @@
 ---@field cwd string
 ---@field original_file string
 ---@field window vis.window
----@field directory_lines vis.range
+---@field directory_lines integer
 instance = {}
 instance.__index = instance
 
@@ -25,29 +25,36 @@ function instance:insert_data()
   local ls_out = Shell.get_ls(self.cwd)
   local entries = Utils.parse_ls(ls_out, self.cwd)
 
-  local window_cursor = 0
+  local buffer_content = ""
   local select_cursor = 0
   local visible_lines = 0
   local original_file_name = tostring(self.original_file):gmatch("[^%/]+$")()
+  self.directory_lines = 0
+
   for _, entry in ipairs(entries) do
     ---@cast entry Entry
-    if self.oil.options["show_hidden"] or not entry["is_hidden"] then
-      visible_lines = visible_lines + 1
-      if entry["is_dir"] then
-        self.directory_lines.finish = window_cursor + #entry["display_name"]
-      end
-
-      self.window.file:insert(window_cursor, entry["display_name"])
-      window_cursor = window_cursor + #entry["display_name"]
-
-      self.window.file:insert(window_cursor, "\n")
-      window_cursor = window_cursor + 1
-
-      if entry.name == original_file_name then
-        select_cursor = visible_lines
-      end
+    if entry["display_name"] == "./" then
+      goto continue
     end
+    if entry["is_hidden"] and not self.oil.options.show_hidden then
+      goto continue
+    end
+
+    visible_lines = visible_lines + 1
+    local name = entry["display_name"] .. "\n"
+    if entry["is_dir"] then
+      self.directory_lines = self.directory_lines + #name
+    end
+
+    buffer_content = buffer_content .. name
+
+    if entry.name == original_file_name then
+      select_cursor = visible_lines
+    end
+    ::continue::
   end
+
+  self.window.file:insert(0, buffer_content)
   self.window:draw()
   vis.win = self.window
   vis:feedkeys("gg")
@@ -64,11 +71,7 @@ function instance:highlight()
   if self.window.style == nil then
     return
   end
-  self.window:style(
-    self.oil.DIR_COLOR,
-    self.directory_lines.start,
-    self.directory_lines.finish
-  )
+  self.window:style(self.oil.DIR_COLOR, 0, self.directory_lines)
 end
 
 function instance:end_instance()
@@ -92,11 +95,14 @@ function instance:window_closed(win)
   vis.events.unsubscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
 end
 
-function instance:clear_data()
-  for window in vis:windows() do
-    ---@cast window vis.window
-    if tostring(window.file.name):find("^Oil %d+$") then
-      return
+---@param force? boolean
+function instance:clear_data(force)
+  if force ~= true then
+    for window in vis:windows() do
+      ---@cast window vis.window
+      if tostring(window.file.name):find("^Oil %d+$") then
+        return
+      end
     end
   end
   self.oil.window_ids = 0
@@ -135,6 +141,7 @@ function instance:interact_entry()
   else
     self:end_instance()
     vis:command('e! "' .. cwd .. '"')
+    self:clear_data()
   end
 end
 
@@ -192,6 +199,11 @@ function instance:init()
   self.window:map(vis.modes.NORMAL, self.oil.keybinds.print_cwd, function()
     vis:info(self.cwd)
   end)
+
+  self.window:map(vis.modes.NORMAL, self.oil.keybinds.toggle_hidden, function()
+    self.oil.options.show_hidden = not self.oil.options.show_hidden
+    self:insert_data()
+  end)
 end
 
 ---@param oil oil Main class
@@ -204,7 +216,7 @@ function instance.new(oil, window, cwd, original_file)
     cwd = cwd,
     original_file = original_file,
     window = window,
-    directory_lines = { start = 0, finish = 1 },
+    directory_lines = 0,
   }
   setmetatable(new, instance)
 

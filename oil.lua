@@ -34,6 +34,7 @@ oil.keybinds = {
   open_buffer = " e",
   open_vertical = " vv",
   open_horizontal = " hh",
+  toggle_hidden = ".",
 }
 
 function oil:map_interact(key)
@@ -77,10 +78,7 @@ function oil:open(method)
   local cwd = Shell.get_win_cwd()
   local original_file = nil
 
-  if method == nil or method == "vertical" then
-    method = "vertical"
-    vis:command("vnew")
-  elseif method == "horizontal" then
+  if method == "horizontal" then
     vis:command("new")
   elseif method == "buffer" then
     if vis.win.file.modified then
@@ -99,6 +97,9 @@ function oil:open(method)
       original_file = vis.win.file.path
     end
     vis.win:set_syntax("text")
+  else
+    method = "vertical"
+    vis:command("vnew")
   end
 
   if tostring(vis.win.file.name):find("^Oil %d+$") then
@@ -106,8 +107,8 @@ function oil:open(method)
   end
 
   local window = vis.win
-  window.file = window_name
   local instance = Instance.new(self, window, cwd, original_file)
+  window.file = window_name
   window.oil = instance
 
   instance:insert_data()

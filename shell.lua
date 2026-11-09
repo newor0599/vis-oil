@@ -18,7 +18,7 @@ end
 ---@param cwd string Current working directory to list
 ---@return string # output of ls
 function M.get_ls(cwd)
-  local ls_out = io.popen("ls -lapQ --group-directories-first " .. cwd)
+  local ls_out = io.popen('ls -lapQ --group-directories-first "' .. cwd .. '"')
     :lines("a")()
   return ls_out
 end

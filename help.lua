@@ -3,6 +3,8 @@ M.message = [[
 Commands
 
 [open]
+Opens oil vertically by default
+
 - buffer
 Open oil at current buffer
 
@@ -13,9 +15,10 @@ Open oil vertically
 Open oil horizontally
 
 # Example
-:oil open buffer
-:oil open v
-:oil open horizontal
+:oil open buffer     # open at current buffer
+:oil open v          # open vertically
+:oil open horizontal # open horizontally
+:oil open            # open vertically
 
 [debug]
 - window
