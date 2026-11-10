@@ -18,7 +18,7 @@ function M.parse_ls(ls_out, cwd)
       params[#params + 1] = param
     end
 
-    local name = table.concat(params, " ", 9, #params)
+    local name = line:gmatch('".*')()
     local is_dir = name:sub(-1) == "/"
     if is_dir then
       name = name:sub(1, #name - 1)
@@ -26,13 +26,24 @@ function M.parse_ls(ls_out, cwd)
     name = name:sub(2, #name - 1)
     name = name:gsub('%" %-%> %"', (is_dir and "/" or "") .. " -> ")
 
+    local no_name = line:gsub('".*', "")
+    local permission_bits = params[1]:sub(2, -1)
+    local owner_user = params[3]
+    local owner_group = params[4]
+    local type = params[1]:sub(1, 1)
+    local date = no_name:sub(-13, -2)
+    local size = ""
+    for v in no_name:gmatch("[^ ]+") do
+      size = v
+    end
+
     local entry = Entry.new(
-      params[1]:sub(1, 1),
-      params[1]:sub(2, #params[1]),
-      params[3],
-      params[4],
-      params[5],
-      params[6] .. " " .. params[7] .. " " .. params[8],
+      type,
+      permission_bits,
+      owner_user,
+      owner_group,
+      size,
+      date,
       name,
       cwd,
       is_dir
