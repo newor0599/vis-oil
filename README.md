@@ -35,6 +35,9 @@ With vis-plug
 
 ### Configuration
 ```lua
+-- Initialize default configuration
+oil()
+
 -- Show hidden files
 oil.options.show_hidden = true
 
