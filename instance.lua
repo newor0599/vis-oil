@@ -209,7 +209,9 @@ end
 
 function instance:interact_entry()
   local cursor_content = self:get_cursor_entry()
-  local id = tonumber(cursor_content:sub(2, 4), 16)
+  local id = cursor_content:gmatch("/[a-f0-9]+ ")()
+  id = cursor_content:sub(2, #id)
+  id = tonumber(id, 16)
   local entry = self.oil.entry_cache[id]
   if entry == nil then
     vis:info("No permission to access this path")
