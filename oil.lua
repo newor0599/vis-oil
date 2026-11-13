@@ -39,8 +39,18 @@ function oil:make_entry_id()
   return self.entry_ids
 end
 
+---@param message string
+function oil:log(message)
+  if self.options.debug then
+    local current_win = vis.win
+    vis:message(message)
+    vis.win = current_win
+  end
+end
+
 oil.options = {
   show_hidden = false,
+  debug = false,
 }
 
 oil.keybinds = {
@@ -198,6 +208,12 @@ vis:command_register("oil", function(argv)
     end
     if argv[2]:sub(1, 1) == "h" then
       oil.open_horizontal()
+    end
+  end
+  if argv[1] == "redraw" then
+    local oil = vis.win.oil
+    if oil then
+      vis.win.oil:insert_data()
     end
   end
 end)

@@ -13,7 +13,7 @@ instance.__index = instance
 
 function instance:cd(path)
   if Shell.can_access_path(path) then
-    self.cwd = path
+    self.cwd = Utils.normalize_path(path)
     return true
   end
   return false
@@ -87,12 +87,14 @@ function instance:get_entries(cwd)
 
   if range then
     ---@type Entry[]
-    for i = range.start, range.finish - 1, 1 do
+    self.oil:log("Using cache entries")
+    for i = range.start, range.finish, 1 do
       list[#list + 1] = self.oil.entry_cache[i]
     end
     return list
   end
 
+  self.oil:log("Grabbing fresh entries")
   local ls_out = Shell.get_ls(self.cwd)
   list = self:parse_ls(ls_out, self.cwd)
   table.move(list, 1, #list, #self.oil.entry_cache + 1, self.oil.entry_cache)
@@ -167,6 +169,7 @@ function instance:end_instance()
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.interact)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.quit)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.print_cwd)
+  self.window.oil = nil
   self = nil
 end
 
@@ -205,33 +208,32 @@ function instance:get_cursor_entry()
 end
 
 function instance:interact_entry()
-  local entry_name = self:get_cursor_entry()
-  local is_dir = entry_name:sub(-1) == "/"
-  entry_name = entry_name:gsub(" %-%> .*", "")
-  local id = tonumber(entry_name:sub(2, 4), 16)
-  entry_name = entry_name:sub(6, #entry_name)
-  if #entry_name <= 0 then
+  local cursor_content = self:get_cursor_entry()
+  local id = tonumber(cursor_content:sub(2, 4), 16)
+  local entry = self.oil.entry_cache[id]
+  if entry == nil then
+    vis:info("No permission to access this path")
     return
   end
 
-  local cwd = Utils.normalize_path(self.cwd .. entry_name)
+  local cwd = Utils.normalize_path(self.cwd .. entry.name)
   local can_access = Shell.can_access_path(cwd)
   if not can_access then
     vis:info("No permission to access this path")
     return
   end
 
-  if entry_name ~= "../" then
-    local filetype = self.oil.entry_cache[id].type
-    if filetype:find("[-dl]") == nil then
+  if entry.name ~= "../" then
+    if entry.type:find("[-dl]") == nil then
       vis:info("Not an editable ascii file")
       return
     end
   end
 
-  if is_dir then
-    self:cd(cwd)
-    self:insert_data()
+  if entry.is_dir then
+    if self:cd(cwd) then
+      self:insert_data()
+    end
   else
     self:end_instance()
     vis:command('e! "' .. cwd .. '"')
