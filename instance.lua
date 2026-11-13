@@ -19,11 +19,91 @@ function instance:cd(path)
   return false
 end
 
+---@param ls_out string Output of `ls -laQ`
+---@param cwd string Current working directory
+---@return Entry[]
+function instance:parse_ls(ls_out, cwd)
+  local _, header_end = ls_out:find("^total %d+\n")
+  ls_out = ls_out:sub(header_end + 1, #ls_out - 1)
+
+  local entries = {}
+
+  local entry_lines = ls_out:gmatch("[^\n]+")
+
+  for line in entry_lines do
+    ---@type string[]
+    local params = {}
+    for param in line:gmatch("[^ ]+") do
+      params[#params + 1] = param
+    end
+
+    local name = line:gmatch('".*')()
+    local is_dir = name:sub(-1) == "/"
+    if is_dir then
+      name = name:sub(1, #name - 1)
+    end
+    name = name:sub(2, #name - 1)
+    name = name:gsub('%" %-%> %"', (is_dir and "/" or "") .. " -> ")
+
+    local no_name = line:gsub('".*', "")
+    local permission_bits = params[1]:sub(2, -1)
+    local owner_user = params[3]
+    local owner_group = params[4]
+    local type = params[1]:sub(1, 1)
+    local id = self.oil:make_entry_id()
+    local date = no_name:sub(-13, -2)
+    local size = ""
+    for v in no_name:gmatch("[^ ]+") do
+      size = v
+    end
+
+    local entry = Entry.new(
+      type,
+      permission_bits,
+      owner_user,
+      owner_group,
+      size,
+      date,
+      name,
+      cwd,
+      is_dir,
+      id
+    )
+
+    entries[#entries + 1] = entry
+  end
+  return entries
+end
+
+---@param cwd? string
+---@return Entry[]
+function instance:get_entries(cwd)
+  if not cwd then
+    cwd = self.cwd
+  end
+
+  local range = self.oil.entry_cache[cwd]
+  local list = {}
+
+  if range then
+    ---@type Entry[]
+    for i = range.start, range.finish - 1, 1 do
+      list[#list + 1] = self.oil.entry_cache[i]
+    end
+    return list
+  end
+
+  local ls_out = Shell.get_ls(self.cwd)
+  list = self:parse_ls(ls_out, self.cwd)
+  table.move(list, 1, #list, #self.oil.entry_cache + 1, self.oil.entry_cache)
+  self.oil.entry_cache[cwd] = { start = list[1].id, finish = list[#list].id }
+  return list
+end
+
 function instance:insert_data()
   self.window.file:delete({ start = 0, finish = self.window.file.size })
 
-  local ls_out = Shell.get_ls(self.cwd)
-  local entries = Utils.parse_ls(ls_out, self.cwd)
+  local entries = self:get_entries()
 
   local buffer_content = ""
   local select_cursor = 0
@@ -33,15 +113,18 @@ function instance:insert_data()
 
   for _, entry in ipairs(entries) do
     ---@cast entry Entry
+
     if entry["display_name"] == "./" then
       goto continue
     end
+
     if entry["is_hidden"] and not self.oil.options.show_hidden then
       goto continue
     end
 
     visible_lines = visible_lines + 1
-    local name = entry["display_name"] .. "\n"
+    local id = Utils.int_to_id(entry.id)
+    local name = "/" .. id .. " " .. entry["display_name"] .. "\n"
     if entry["is_dir"] then
       self.directory_lines = self.directory_lines + #name
     end
@@ -58,7 +141,7 @@ function instance:insert_data()
   self.window:draw()
   vis.win = self.window
   vis:feedkeys("gg")
-  if select_cursor > 2 then
+  if select_cursor > 1 then
     vis:feedkeys(tostring(select_cursor) .. "G")
   end
   self.window.file.modified = false
@@ -125,6 +208,8 @@ function instance:interact_entry()
   local entry_name = self:get_cursor_entry()
   local is_dir = entry_name:sub(-1) == "/"
   entry_name = entry_name:gsub(" %-%> .*", "")
+  local id = tonumber(entry_name:sub(2, 4), 16)
+  entry_name = entry_name:sub(6, #entry_name)
   if #entry_name <= 0 then
     return
   end
@@ -135,6 +220,15 @@ function instance:interact_entry()
     vis:info("No permission to access this path")
     return
   end
+
+  if entry_name ~= "../" then
+    local filetype = self.oil.entry_cache[id].type
+    if filetype:find("[-dl]") == nil then
+      vis:info("Not an editable ascii file")
+      return
+    end
+  end
+
   if is_dir then
     self:cd(cwd)
     self:insert_data()

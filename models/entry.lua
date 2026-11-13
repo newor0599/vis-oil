@@ -10,6 +10,7 @@
 ---@field name string
 ---@field display_name string
 ---@field is_hidden string
+---@field id integer
 local Entry = {}
 
 ---Create new entry
@@ -22,6 +23,7 @@ local Entry = {}
 ---@param name string
 ---@param cwd string
 ---@param is_dir boolean
+---@param id integer
 ---@return Entry
 function Entry.new(
   type,
@@ -32,12 +34,13 @@ function Entry.new(
   date,
   name,
   cwd,
-  is_dir
+  is_dir,
+  id
 )
   ---@type string
   local display_name = name
   local file_name = name:gsub(" %-> .*", "")
-  if is_dir then
+  if is_dir and file_name:sub(-1) ~= "/" then
     file_name = file_name .. "/"
   end
 
@@ -62,6 +65,7 @@ function Entry.new(
     name = file_name,
     display_name = display_name,
     is_hidden = is_hidden,
+    id = id,
   }
 end
 

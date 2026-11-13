@@ -1,0 +1,3 @@
+---@class EntryCache
+---@field [string] vis.range
+---@field [integer] Entry

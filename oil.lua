@@ -2,24 +2,41 @@ if not vis.communicate then
   vis:message("Oil Error: file operations requires vis communicate patch")
   return {}
 end
+if not vis.events then
+  vis:message("Oil Error: directory highlight requires vis events patch")
+  return {}
+end
+if not vis.ui then
+  vis:message("Oil Error: directory highlight requires vis ui patch")
+  return {}
+end
 
-Entry = require("vis-oil.entry")
+Entry = require("vis-oil.models.entry")
 Utils = require("vis-oil.utils")
 Shell = require("vis-oil.shell")
 Instance = require("vis-oil.instance")
 Help = require("vis-oil.help")
+EntryCache = require("vis-oil.models.entry_cache")
 
 ---Main class for oil
 ---@class oil
+---@field entry_cache EntryCache
 oil = {
   DIR_COLOR = vis.ui:style_push("fore:#95AEC7,back:#1C2023"),
   SYM_COLOR = vis.ui:style_push("fore:#C7C795,back:#1C2023"),
   window_ids = 0,
+  entry_ids = 0,
+  entry_cache = {},
 }
 
 function oil:make_window_id()
   self.window_ids = self.window_ids + 1
   return self.window_ids
+end
+
+function oil:make_entry_id()
+  self.entry_ids = self.entry_ids + 1
+  return self.entry_ids
 end
 
 oil.options = {
@@ -132,6 +149,27 @@ function oil.init()
   vis:map(vis.modes.NORMAL, oil.keybinds.open_buffer, oil.open_buffer)
 end
 
+function oil:dump_entry_cache()
+  for cwd, range in pairs(oil.entry_cache) do
+    if tostring(cwd):find("^%d+") then
+      goto continue
+    end
+    vis:message(cwd)
+    vis:message(
+      string.format(
+        "Range Start %s Finish %s",
+        tostring(range.start),
+        tostring(range.finish)
+      )
+    )
+    for i = range.start, range.finish do
+      vis:message(oil.entry_cache[i].id .. " " .. oil.entry_cache[i].name)
+    end
+    vis:message("")
+    ::continue::
+  end
+end
+
 vis:command_register("oil", function(argv)
   if argv[1] == "debug" then
     if argv[2] == "window" then
@@ -142,6 +180,10 @@ vis:command_register("oil", function(argv)
         vis:message("Not an oil window")
       end
       vis.win = win
+    end
+    if argv[2] == "entry-cache" then
+      oil:dump_entry_cache()
+      vis:message("")
     end
   end
   if argv[1] == "help" then

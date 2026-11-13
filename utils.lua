@@ -1,57 +1,10 @@
-require("vis-oil.entry")
+require("vis-oil.models.entry")
 local M = {}
 
----@param ls_out string Output of `ls -laQ`
----@param cwd string Current working directory
-function M.parse_ls(ls_out, cwd)
-  local _, header_end = ls_out:find("^total %d+\n")
-  ls_out = ls_out:sub(header_end + 1, #ls_out - 1)
-
-  local entries = {}
-
-  local entry_lines = ls_out:gmatch("[^\n]+")
-
-  for line in entry_lines do
-    ---@type string[]
-    local params = {}
-    for param in line:gmatch("[^ ]+") do
-      params[#params + 1] = param
-    end
-
-    local name = line:gmatch('".*')()
-    local is_dir = name:sub(-1) == "/"
-    if is_dir then
-      name = name:sub(1, #name - 1)
-    end
-    name = name:sub(2, #name - 1)
-    name = name:gsub('%" %-%> %"', (is_dir and "/" or "") .. " -> ")
-
-    local no_name = line:gsub('".*', "")
-    local permission_bits = params[1]:sub(2, -1)
-    local owner_user = params[3]
-    local owner_group = params[4]
-    local type = params[1]:sub(1, 1)
-    local date = no_name:sub(-13, -2)
-    local size = ""
-    for v in no_name:gmatch("[^ ]+") do
-      size = v
-    end
-
-    local entry = Entry.new(
-      type,
-      permission_bits,
-      owner_user,
-      owner_group,
-      size,
-      date,
-      name,
-      cwd,
-      is_dir
-    )
-
-    entries[#entries + 1] = entry
-  end
-  return entries
+---@param int integer
+---@return string
+function M.int_to_id(int)
+  return string.format("%03x", int)
 end
 
 ---@param path string
