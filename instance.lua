@@ -165,6 +165,7 @@ function instance:end_instance()
   end
   vis.events.unsubscribe(vis.events.WIN_CLOSE, self.close_handler)
   vis.events.unsubscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
+  vis.events.unsubscribe(vis.events.FILE_SAVE_POST, self.highlight_handler)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.goto_parent)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.interact)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.quit)
@@ -258,6 +259,37 @@ function instance:goto_parent()
   vis:info("No permission to access this path")
 end
 
+---@param win? vis.window
+---@return Entry[]
+function instance:window_to_entry(win)
+  if win == nil then
+    win = self.window
+  end
+  local entries = {
+    [0] = {},
+  }
+  for line in win.file:lines_iterator() do
+    ---@cast line string
+    if line:sub(1, 1) == "/" then
+      local id = line:match("[^/][0-9a-f]+")
+      id = tonumber(id, 16)
+      entries[#entries + 1] = self.oil.entry_cache[id]
+    else
+      entries[0][#entries[0] + 1] = line
+    end
+  end
+  return entries
+end
+
+---@param file vis.file
+---@param path string
+function instance:post_write_action(file, path)
+  if self.window.file.path ~= path then
+    return
+  end
+  self.oil:log("Executing post write action")
+end
+
 function instance:init()
   self.highlight_handler = function()
     self:highlight()
@@ -267,8 +299,13 @@ function instance:init()
     self:window_closed(win)
   end
 
+  self.post_write_handler = function(file, path)
+    self:post_write_action(file, path)
+  end
+
   vis.events.subscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
   vis.events.subscribe(vis.events.WIN_CLOSE, self.close_handler)
+  vis.events.subscribe(vis.events.FILE_SAVE_POST, self.post_write_handler)
 
   self.window:map(vis.modes.NORMAL, self.oil.keybinds.goto_parent, function()
     self:goto_parent()

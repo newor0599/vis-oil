@@ -50,7 +50,7 @@ end
 
 oil.options = {
   show_hidden = false,
-  debug = false,
+  debug = true,
 }
 
 oil.keybinds = {
