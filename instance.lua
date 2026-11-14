@@ -192,6 +192,8 @@ function instance:clear_data(force)
     end
   end
   self.oil.window_ids = 0
+  self.oil.entry_ids = 0
+  self.oil.entry_cache = {}
 end
 
 function instance:get_cursor_entry()
