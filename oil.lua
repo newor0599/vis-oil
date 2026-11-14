@@ -22,8 +22,8 @@ EntryCache = require("vis-oil.models.entry_cache")
 ---@class oil
 ---@field entry_cache EntryCache
 oil = {
-  DIR_COLOR = vis.ui:style_push("fore:#95AEC7,back:#1C2023"),
-  SYM_COLOR = vis.ui:style_push("fore:#C7C795,back:#1C2023"),
+  DIR_COLOR = vis.ui:style_push("fore:#95AEC7"),
+  SYM_COLOR = vis.ui:style_push("fore:#C7C795"),
   window_ids = 0,
   entry_ids = 0,
   entry_cache = {},

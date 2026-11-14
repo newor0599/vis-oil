@@ -37,7 +37,7 @@ function instance:parse_ls(ls_out, cwd)
       params[#params + 1] = param
     end
 
-    local name = line:gmatch('".*')()
+    local name = line:match('".*')
     local is_dir = name:sub(-1) == "/"
     if is_dir then
       name = name:sub(1, #name - 1)
@@ -110,7 +110,7 @@ function instance:insert_data()
   local buffer_content = ""
   local select_cursor = 0
   local visible_lines = 0
-  local original_file_name = tostring(self.original_file):gmatch("[^%/]+$")()
+  local original_file_name = tostring(self.original_file):match("[^%/]+$")
   self.directory_lines = 0
 
   for _, entry in ipairs(entries) do
@@ -209,8 +209,7 @@ end
 
 function instance:interact_entry()
   local cursor_content = self:get_cursor_entry()
-  local id = cursor_content:gmatch("/[a-f0-9]+ ")()
-  id = cursor_content:sub(2, #id)
+  local id = cursor_content:match("[^/][a-f0-9]+ ")
   id = tonumber(id, 16)
   local entry = self.oil.entry_cache[id]
   if entry == nil then
