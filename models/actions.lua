@@ -1,0 +1,6 @@
+---@class Actions
+---@field copy SourceDestination[]
+---@field move SourceDestination[]
+---@field dir string[]
+---@field file string[]
+---@field delete string[]

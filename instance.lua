@@ -165,7 +165,7 @@ function instance:end_instance()
   end
   vis.events.unsubscribe(vis.events.WIN_CLOSE, self.close_handler)
   vis.events.unsubscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
-  vis.events.unsubscribe(vis.events.FILE_SAVE_POST, self.highlight_handler)
+  vis.events.unsubscribe(vis.events.FILE_SAVE_POST, self.post_write_handler)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.goto_parent)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.interact)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.quit)
@@ -270,10 +270,21 @@ function instance:window_to_entry(win)
   }
   for line in win.file:lines_iterator() do
     ---@cast line string
-    if line:sub(1, 1) == "/" then
+    if line:find("/[0-9a-f]+ .*") then
+      local is_dir = line:sub(-1) == "/"
       local id = line:match("[^/][0-9a-f]+")
       id = tonumber(id, 16)
-      entries[#entries + 1] = self.oil.entry_cache[id]
+      local entry = self.oil.entry_cache[id]
+      local display_name = line:match(" .*")
+      display_name = display_name:sub(2, #display_name)
+      local name = display_name:gsub(" %-> .*", "")
+      entries[#entries + 1] = {
+        name = name,
+        display_name = display_name,
+        path = entry.path,
+        id = entry.id,
+        is_dir = is_dir,
+      }
     else
       entries[0][#entries[0] + 1] = line
     end
@@ -288,6 +299,87 @@ function instance:post_write_action(file, path)
     return
   end
   self.oil:log("Executing post write action")
+  local user_entries = self:window_to_entry(self.window)
+  local cwd_range = self.oil.entry_cache[self.cwd]
+  local id_check = {}
+  local id_delete = {}
+  ---@type Actions
+  local actions = {
+    copy = {},
+    move = {},
+    file = {},
+    dir = {},
+    delete = {},
+  }
+  for _, user_entry in ipairs(user_entries) do
+    if user_entry.name == self.oil.entry_cache[user_entry.id].name then
+      id_check[user_entry.id] = true
+    end
+  end
+
+  for _, user_entry in ipairs(user_entries) do
+    local orig_entry = self.oil.entry_cache[user_entry.id]
+    if user_entry.id > cwd_range.finish or user_entry.id < cwd_range.start then
+      actions.copy[#actions.copy + 1] = SourceDestination.new(
+        orig_entry.path .. orig_entry.name,
+        self.cwd .. user_entry.name
+      )
+    end
+
+    if user_entry.name ~= orig_entry.name and not id_check[user_entry.id] then
+      id_check[user_entry.id] = true
+      actions.move[#actions.move + 1] = SourceDestination.new(
+        orig_entry.path .. orig_entry.name,
+        self.cwd .. user_entry.name
+      )
+    elseif user_entry.name ~= orig_entry.name and id_check[user_entry.id] then
+      actions.copy[#actions.copy + 1] = SourceDestination.new(
+        orig_entry.path .. orig_entry.name,
+        self.cwd .. user_entry.name
+      )
+    end
+  end
+
+  for i = cwd_range.start, cwd_range.finish do
+    if id_check[i] then
+      goto continue
+    end
+    if self.oil.entry_cache[i].name == "./" then
+      goto continue
+    end
+    if
+        self.oil.entry_cache[i].is_hidden and not self.oil.options.show_hidden
+    then
+      goto continue
+    end
+    id_delete[#id_delete + 1] = i
+    actions.delete[#actions.delete + 1] = self.oil.entry_cache[i].path ..
+        self.oil.entry_cache[i].name
+    ::continue::
+  end
+
+  for _, name in ipairs(user_entries[0]) do
+    if name:sub(-1) == "/" then
+      actions.dir[#actions.dir + 1] = name
+    else
+      actions.file[#actions.file + 1] = name
+    end
+  end
+  for key, list in pairs(actions) do
+    local action = key
+    if action == "file" then
+      action = "new_file"
+    end
+    if action == "dir" then
+      action = "new_dir"
+    end
+    for _, value in ipairs(list) do
+      FileAction[action](value)
+    end
+  end
+  self.oil.entry_cache[self.cwd] = nil
+  FileAction.delete(self.window.file.path)
+  self:insert_data()
 end
 
 function instance:init()

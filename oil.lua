@@ -16,7 +16,8 @@ Utils = require("vis-oil.utils")
 Shell = require("vis-oil.shell")
 Instance = require("vis-oil.instance")
 Help = require("vis-oil.help")
-EntryCache = require("vis-oil.models.entry_cache")
+SourceDestination = require("vis-oil.models.srcdst")
+FileAction = require("vis-oil.fileaction")
 
 ---Main class for oil
 ---@class oil
