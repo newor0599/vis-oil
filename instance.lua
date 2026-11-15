@@ -31,6 +31,7 @@ function instance:insert_data()
   local original_file_name = tostring(self.original_file):gmatch("[^%/]+$")()
   self.directory_lines = 0
 
+  local i = 0
   for _, entry in ipairs(entries) do
     ---@cast entry Entry
     if entry["display_name"] == "./" then
@@ -41,7 +42,19 @@ function instance:insert_data()
     end
 
     visible_lines = visible_lines + 1
-    local name = entry["display_name"] .. "\n"
+
+    if not entry["id"] then
+      entry["id"] = i
+      i = i + 1
+    end
+
+    local name
+    if entry["display_name"] == "../" then
+      name = entry["display_name"] .. "\n"
+    else
+      name = "#" .. entry["id"] .. "| ".. entry["display_name"] .. "\n"
+    end
+
     if entry["is_dir"] then
       self.directory_lines = self.directory_lines + #name
     end
@@ -62,6 +75,24 @@ function instance:insert_data()
     vis:feedkeys(tostring(select_cursor) .. "G")
   end
   self.window.file.modified = false
+end
+
+function instance:parse_changes(file)
+  local contents = {}
+  for line in file:lines_iterator() do
+    -- Following for valid file:
+    -- 1) Trim the line
+    -- 2) Check whether it contains inner '/'. If it does
+    --    that's an error
+    -- 3)
+    local l = line
+    if l:sub(-1) == "/" then
+      l = l:sub(0, -2)
+    end
+    -- table.insert(contents, { name = line, })
+  end
+  table.sort(contents)
+  vis:message(inspect(contents))
 end
 
 function instance:highlight()
@@ -117,8 +148,12 @@ function instance:get_cursor_entry()
   local range = selection.range
   vis:feedkeys("<Escape>")
   self.window.selection:to(y, x)
-  local name = self.window.file:content(range)
-  name = name:sub(1, #name - 1)
+  local name = self.window.file:content(range):sub(1, -2)
+
+  if name ~= "../" then
+    local _, start = name:find("| ", 1, true)
+    name = name:sub(start + 1)
+  end
   return name
 end
 
@@ -166,6 +201,13 @@ function instance:init()
 
   vis.events.subscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
   vis.events.subscribe(vis.events.WIN_CLOSE, self.close_handler)
+
+  self.window:map(vis.modes.NORMAL, ' test', function()
+    if not self.window then
+      return
+    end
+    self:parse_changes(self.window.file)
+  end)
 
   self.window:map(vis.modes.NORMAL, self.oil.keybinds.goto_parent, function()
     self:goto_parent()
