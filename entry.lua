@@ -1,5 +1,4 @@
 ---@class Entry
----@field id integer
 ---@field path string
 ---@field is_dir string
 ---@field type string
@@ -52,7 +51,6 @@ function Entry.new(
   end
 
   return {
-    id = id,
     path = cwd,
     is_dir = is_dir,
     type = type,

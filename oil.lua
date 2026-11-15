@@ -8,6 +8,7 @@ Utils = require("vis-oil.utils")
 Shell = require("vis-oil.shell")
 Instance = require("vis-oil.instance")
 Help = require("vis-oil.help")
+Fs = require("vis-oil.fs")
 
 ---Main class for oil
 ---@class oil

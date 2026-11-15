@@ -83,7 +83,7 @@ function M.prompt_user(prompt, choices)
   local cmd = "vis-menu"
 
   if prompt then
-    cmd = cmd .. " -p '" .. prompt .. "'"
+    cmd = cmd .. " -b -p '" .. prompt .. "'"
   end
 
   local choice = nil
@@ -99,6 +99,23 @@ function M.prompt_user(prompt, choices)
 
   vis:redraw()
   return choice
+end
+
+-- Taken from http://lua-users.org/wiki/StringTrim
+function M.string_trim(s)
+  if not s then return end
+  local from = s:match"^%s*()"
+  return from > #s and "" or s:match(".*%S", from)
+end
+
+function M.readonly_buffer_ehandler(readonly_win)
+  return function ()
+    if vis.win ~= readonly_win then
+      return
+    end
+    vis:info("Changes are displayed in a readonly buffer!")
+    return true
+  end
 end
 
 return M
