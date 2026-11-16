@@ -18,6 +18,7 @@ Instance = require("vis-oil.instance")
 Help = require("vis-oil.help")
 SourceDestination = require("vis-oil.models.srcdst")
 FileAction = require("vis-oil.fileaction")
+Actions = require("vis-oil.models.actions")
 
 ---Main class for oil
 ---@class oil

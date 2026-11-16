@@ -304,13 +304,7 @@ function instance:post_write_action(file, path)
   local id_check = {}
   local id_delete = {}
   ---@type Actions
-  local actions = {
-    copy = {},
-    move = {},
-    file = {},
-    dir = {},
-    delete = {},
-  }
+  local actions = Actions.new()
   for _, user_entry in ipairs(user_entries) do
     if user_entry.name == self.oil.entry_cache[user_entry.id].name then
       id_check[user_entry.id] = true
@@ -359,27 +353,45 @@ function instance:post_write_action(file, path)
   end
 
   for _, name in ipairs(user_entries[0]) do
-    if name:sub(-1) == "/" then
-      actions.dir[#actions.dir + 1] = name
-    else
-      actions.file[#actions.file + 1] = name
+    if #name > 0 then
+      if name:sub(-1) == "/" then
+        actions.dir[#actions.dir + 1] = self.cwd .. name
+      else
+        actions.file[#actions.file + 1] = self.cwd .. name
+      end
     end
   end
-  for key, list in pairs(actions) do
-    local action = key
-    if action == "file" then
-      action = "new_file"
-    end
-    if action == "dir" then
-      action = "new_dir"
-    end
-    for _, value in ipairs(list) do
-      FileAction[action](value)
+
+  if #tostring(actions) <= 0 then
+    vis:info("No changes")
+    return
+  end
+
+  vis:message(tostring(actions))
+  vis:redraw()
+  local answer = Utils.prompt_user("Apply changes?", { "no", "yes", "cancel" })
+  self.oil:log("User answered " .. tostring(answer))
+
+  if answer == "yes" then
+    for key, list in pairs(actions) do
+      local action = key
+      if action == "file" then
+        action = "new_file"
+      end
+      if action == "dir" then
+        action = "new_dir"
+      end
+      for _, value in ipairs(list) do
+        FileAction[action](value)
+      end
     end
   end
-  self.oil.entry_cache[self.cwd] = nil
-  FileAction.delete(self.window.file.path)
-  self:insert_data()
+
+  if answer == "yes" or answer == "no" then
+    self.oil.entry_cache[self.cwd] = nil
+    FileAction.delete(self.window.file.path)
+    self:insert_data()
+  end
 end
 
 function instance:init()
