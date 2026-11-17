@@ -292,16 +292,13 @@ function instance:goto_parent()
   vis:info("No permission to access this path")
 end
 
----@param win? vis.window
+---@param content string
 ---@return Entry[]
-function instance:window_to_entry(win)
-  if win == nil then
-    win = self.window
-  end
+function instance:string_to_entry(content)
   local entries = {
     [0] = {},
   }
-  for line in win.file:lines_iterator() do
+  for line in content:gmatch("[^\n]+") do
     ---@cast line string
     if line:find("/[0-9a-f]+ .*") then
       local is_dir = line:sub(-1) == "/"
@@ -325,15 +322,9 @@ function instance:window_to_entry(win)
   return entries
 end
 
----@param file vis.file
----@param path string
-function instance:post_write_action(file, path)
-  if self.window.file.path ~= path then
-    return
-  end
-  self.oil:log("Executing post write action")
-  local user_entries = self:window_to_entry(self.window)
-  local cwd_range = self.oil.entry_cache[self.cwd]
+function instance:evaluate_changes(cwd)
+  local user_entries = self:string_to_entry(self.oil.buffer_cache[cwd].content)
+  local cwd_range = self.oil.entry_cache[cwd]
   local id_check = {}
   local id_delete = {}
   ---@type Actions
@@ -394,6 +385,21 @@ function instance:post_write_action(file, path)
       end
     end
   end
+  return actions
+end
+
+---@param file vis.file
+---@param path string
+function instance:post_write_action(file, path)
+  -- prevent other instance trigger post write action
+  if self.window.file.path ~= path then
+    return
+  end
+
+  self.oil:log("Executing post write action")
+  self:cache_buffer()
+
+  local actions = self:evaluate_changes(self.cwd)
 
   if #tostring(actions) <= 0 then
     vis:info("No changes")
@@ -418,11 +424,13 @@ function instance:post_write_action(file, path)
         FileAction[action](value)
       end
     end
+    self.oil.entry_cache[self.cwd] = nil
   end
 
+  FileAction.delete(self.window.file.path)
+
   if answer == "yes" or answer == "no" then
-    self.oil.entry_cache[self.cwd] = nil
-    FileAction.delete(self.window.file.path)
+    self.oil.buffer_cache[self.cwd] = nil
     self:render_entries()
   end
 end
