@@ -476,6 +476,10 @@ function instance:post_write_action(file, path)
 
   FileAction.delete(self.window.file.path)
 
+  vis:message("")
+  vis.win.file = ""
+  vis.win:close(true)
+
   if answer == "yes" or answer == "no" then
     self.oil.buffer_cache[self.cwd] = nil
     self:render_entries()
