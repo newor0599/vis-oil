@@ -102,16 +102,20 @@ function instance:get_entries(cwd)
   return list
 end
 
-function instance:insert_data()
-  self.window.file:delete({ start = 0, finish = self.window.file.size })
+function instance:get_buffer_content(cwd)
+  if cwd == nil then
+    cwd = self.cwd
+  end
+  if self.oil.buffer_cache[cwd] then
+    self.oil:log("Using buffer cache")
+    return self.oil.buffer_cache[cwd]
+  end
+  self.oil:log("Using new data")
 
   local entries = self:get_entries()
 
   local buffer_content = ""
-  local select_cursor = 0
-  local visible_lines = 0
-  local original_file_name = tostring(self.original_file):match("[^%/]+$")
-  self.directory_lines = 0
+  local directory_lines = 0
 
   for _, entry in ipairs(entries) do
     ---@cast entry Entry
@@ -124,28 +128,41 @@ function instance:insert_data()
       goto continue
     end
 
-    visible_lines = visible_lines + 1
     local id = Utils.int_to_id(entry.id)
     local name = "/" .. id .. " " .. entry["display_name"] .. "\n"
     if entry["is_dir"] then
-      self.directory_lines = self.directory_lines + #name
+      directory_lines = directory_lines + #name
     end
 
     buffer_content = buffer_content .. name
-
-    if entry.name == original_file_name then
-      select_cursor = visible_lines
-    end
     ::continue::
   end
+  return BufferCache.new(buffer_content, directory_lines)
+end
 
-  self.window.file:insert(0, buffer_content)
+function instance:render_entries()
+  self.window.file:delete({ start = 0, finish = self.window.file.size })
+  local buffer_cache = self:get_buffer_content()
+
+  self.window.file:insert(0, buffer_cache.content)
+  self.directory_lines = buffer_cache.dir_highlight
   self.window:draw()
-  vis.win = self.window
   vis:feedkeys("gg")
-  if select_cursor > 1 then
-    vis:feedkeys(tostring(select_cursor) .. "G")
+
+  if tostring(self.original_file):gsub("[^/]+$", "") == self.cwd then
+    local select_cursor = 0
+    local orig_filename = self.original_file:match("[^/]+$")
+    for entry in buffer_cache.content:gmatch("[^\n]+") do
+      select_cursor = select_cursor + 1
+      if entry:gsub("^/[a-f0-9]+ ", "") == orig_filename then
+        break
+      end
+    end
+    if select_cursor > 1 then
+      vis:feedkeys(tostring(select_cursor) .. "G")
+    end
   end
+
   self.window.file.modified = false
 end
 
@@ -195,6 +212,18 @@ function instance:clear_data(force)
   self.oil.window_ids = 0
   self.oil.entry_ids = 0
   self.oil.entry_cache = {}
+  self.oil.buffer_cache = {}
+end
+
+function instance:cache_buffer(window)
+  if window == nil then
+    window = self.window
+  end
+  self.oil.buffer_cache[window.oil.cwd] = BufferCache.new(
+    window.file:content(0, window.file.size),
+    window.oil.directory_lines
+  )
+  self.oil:log("Cached buffer for " .. window.oil.cwd)
 end
 
 function instance:get_cursor_entry()
@@ -240,8 +269,10 @@ function instance:interact_entry()
   end
 
   if entry.is_dir then
-    if self:cd(cwd) then
-      self:insert_data()
+    if Shell.can_access_path(cwd) then
+      self:cache_buffer()
+      self.cwd = Utils.normalize_path(cwd)
+      self:render_entries()
     end
   else
     self:end_instance()
@@ -252,8 +283,10 @@ end
 
 function instance:goto_parent()
   local cwd = Utils.normalize_path(self.cwd .. "../")
-  if self:cd(cwd) then
-    self:insert_data()
+  if Shell.can_access_path(cwd) then
+    self:cache_buffer()
+    self.cwd = cwd
+    self:render_entries()
     return
   end
   vis:info("No permission to access this path")
@@ -390,7 +423,7 @@ function instance:post_write_action(file, path)
   if answer == "yes" or answer == "no" then
     self.oil.entry_cache[self.cwd] = nil
     FileAction.delete(self.window.file.path)
-    self:insert_data()
+    self:render_entries()
   end
 end
 
@@ -447,7 +480,7 @@ function instance:init()
 
   self.window:map(vis.modes.NORMAL, self.oil.keybinds.toggle_hidden, function()
     self.oil.options.show_hidden = not self.oil.options.show_hidden
-    self:insert_data()
+    self:render_entries()
   end)
 end
 
