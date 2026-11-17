@@ -84,6 +84,7 @@ function instance:end_instance()
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.interact)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.quit)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.print_cwd)
+  self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.toggle_hidden)
   self = nil
 end
 
