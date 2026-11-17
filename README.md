@@ -17,13 +17,13 @@ Edit your filesystem like a text buffer.
 - List cwd
 - Traverse directory
 - Open file
-
-### Planned
 - Copy
 - Delete
 - Rename
 - Create
 - Move
+
+### Planned
 - Windows support
 
 ### Installation

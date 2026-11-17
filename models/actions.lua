@@ -4,24 +4,39 @@
 ---@field dir string[]
 ---@field file string[]
 ---@field delete string[]
+
 local M = {}
 
-function M:stringify()
+---@param t1 Actions
+---@param t2 Actions
+---@return Actions
+function M.concat(t1, t2)
+  table.move(t2.copy or {}, 1, #(t2.copy or {}), #(t1.copy or {}) + 1, t1.copy or {})
+  table.move(t2.move or {}, 1, #(t2.move or {}), #(t1.move or {}) + 1, t1.move or {})
+  table.move(t2.dir or {}, 1, #(t2.dir or {}), #(t1.dir or {}) + 1, t1.dir or {})
+  table.move(t2.file or {}, 1, #(t2.file or {}), #(t1.file or {}) + 1, t1.file or {})
+  table.move(t2.delete or {}, 1, #(t2.delete or {}), #(t1.delete or {}) + 1, t1.delete or {})
+  return t1
+end
+
+---@param t Actions
+---@return string
+function M.tostring(t)
   local string = ""
 
-  if #self.dir > 0 or #self.file > 0 then
+  if #t.dir > 0 or #t.file > 0 then
     string = string .. "[NEW]\n"
-    for _, path in ipairs(self.file) do
+    for _, path in ipairs(t.file) do
       string = string .. "- " .. path .. "\n"
     end
-    for _, path in ipairs(self.dir) do
+    for _, path in ipairs(t.dir) do
       string = string .. "- " .. path .. "\n"
     end
   end
 
-  if #self.copy > 0 then
+  if #t.copy > 0 then
     string = string .. "[COPY]\n"
-    for _, srcdst in ipairs(self.copy) do
+    for _, srcdst in ipairs(t.copy) do
       string = string
         .. "- "
         .. srcdst.source
@@ -31,9 +46,9 @@ function M:stringify()
     end
   end
 
-  if #self.move > 0 then
+  if #t.move > 0 then
     string = string .. "[MOVE]\n"
-    for _, srcdst in ipairs(self.move) do
+    for _, srcdst in ipairs(t.move) do
       string = string
         .. "- "
         .. srcdst.source
@@ -43,15 +58,16 @@ function M:stringify()
     end
   end
 
-  if #self.delete > 0 then
+  if #t.delete > 0 then
     string = string .. "[DELETE]\n"
-    for _, path in ipairs(self.delete) do
+    for _, path in ipairs(t.delete) do
       string = string .. "- " .. path .. "\n"
     end
   end
   return string
 end
 
+---@return Actions
 function M.new()
   local new = {
     copy = {},
@@ -62,7 +78,10 @@ function M.new()
   }
   setmetatable(new, {
     __tostring = function(t)
-      return M.stringify(t)
+      return M.tostring(t)
+    end,
+    __concat = function(t1, t2)
+      return M.concat(t1, t2)
     end,
   })
   return new

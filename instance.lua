@@ -342,9 +342,7 @@ function instance:evaluate_changes(cwd)
         orig_entry.path .. orig_entry.name,
         self.cwd .. user_entry.name
       )
-    end
-
-    if user_entry.name ~= orig_entry.name and not id_check[user_entry.id] then
+    elseif user_entry.name ~= orig_entry.name and not id_check[user_entry.id] then
       id_check[user_entry.id] = true
       actions.move[#actions.move + 1] = SourceDestination.new(
         orig_entry.path .. orig_entry.name,
@@ -388,6 +386,48 @@ function instance:evaluate_changes(cwd)
   return actions
 end
 
+---@param actions_list Actions[]
+---@return Actions
+function instance:evaluate_cross_cwd_diff(actions_list)
+  local actions = Actions.new()
+  for index, value in ipairs(actions_list) do
+    actions = actions .. value
+  end
+
+  if #actions.delete <= 0 then
+    return actions
+  end
+
+  local copy_set = {}
+  local new_move = {}
+  local new_delete = {}
+  local copy_to_del_index = {}
+  ---@cast actions Actions
+  for index, value in ipairs(actions.copy) do
+    copy_set[value.source] = index
+  end
+
+  for _, del_path in ipairs(actions.delete) do
+    local copy_index = copy_set[del_path]
+    if copy_index then
+      new_move[#new_move + 1] = actions.copy[copy_index]
+      copy_to_del_index[#copy_to_del_index + 1] = copy_index
+      copy_index = nil
+    else
+      new_delete[#new_delete + 1] = del_path
+    end
+  end
+
+  table.sort(copy_to_del_index)
+  for index, value in ipairs(copy_to_del_index) do
+    actions.copy[value - index + 1] = nil
+  end
+
+  actions.delete = new_delete
+  table.move(new_move, 1, #new_move, #actions.move + 1, actions.move)
+  return actions
+end
+
 ---@param file vis.file
 ---@param path string
 function instance:post_write_action(file, path)
@@ -399,7 +439,11 @@ function instance:post_write_action(file, path)
   self.oil:log("Executing post write action")
   self:cache_buffer()
 
-  local actions = self:evaluate_changes(self.cwd)
+  local actions_list = {}
+  for cwd, _ in pairs(self.oil.buffer_cache) do
+    actions_list[#actions_list + 1] = self:evaluate_changes(cwd)
+  end
+  local actions = self:evaluate_cross_cwd_diff(actions_list)
 
   if #tostring(actions) <= 0 then
     vis:info("No changes")
@@ -412,17 +456,20 @@ function instance:post_write_action(file, path)
   self.oil:log("User answered " .. tostring(answer))
 
   if answer == "yes" then
-    for key, list in pairs(actions) do
-      local action = key
-      if action == "file" then
-        action = "new_file"
-      end
-      if action == "dir" then
-        action = "new_dir"
-      end
-      for _, value in ipairs(list) do
-        FileAction[action](value)
-      end
+    for _, value in ipairs(actions.file) do
+      FileAction.new_file(value)
+    end
+    for _, value in ipairs(actions.dir) do
+      FileAction.new_dir(value)
+    end
+    for _, value in ipairs(actions.copy) do
+      FileAction.copy(value)
+    end
+    for _, value in ipairs(actions.move) do
+      FileAction.move(value)
+    end
+    for _, value in ipairs(actions.delete) do
+      FileAction.delete(value)
     end
     self.oil.entry_cache[self.cwd] = nil
   end
