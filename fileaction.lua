@@ -10,11 +10,11 @@ function M.new_dir(path)
 end
 
 function M.delete(path)
-  return os.execute('mv "' .. path .. '" ~/.trash/')
+  return os.execute('rm -rf "' .. path .. '"')
 end
 
 function M.move(srcdst)
-  return os.rename(srcdst.source,srcdst.destination)
+  return os.rename(srcdst.source, srcdst.destination)
 end
 
 function M.copy(srcdst)

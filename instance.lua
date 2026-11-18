@@ -477,6 +477,10 @@ function instance:post_write_action(file, path)
   FileAction.delete(self.window.file.path)
 
   vis:message("")
+  vis:feedkeys("gg")
+  vis:feedkeys("V")
+  vis:feedkeys("G")
+  vis:feedkeys("x")
   vis.win.file = ""
   vis.win:close(true)
 
