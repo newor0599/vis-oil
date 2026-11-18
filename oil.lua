@@ -15,6 +15,10 @@ Fs = require("vis-oil.fs")
 oil = {
   DIR_COLOR = vis.ui:style_push("fore:#95AEC7,back:#1C2023"),
   SYM_COLOR = vis.ui:style_push("fore:#C7C795,back:#1C2023"),
+  CREATE_COLOR = vis.ui:style_push("fore:#ff9e3b"),
+  COPY_COLOR = vis.ui:style_push("fore:#d61a1a"),
+  MOVE_COLOR = vis.ui:style_push("fore:#98bb6c"),
+  DELETE_COLOR = vis.ui:style_push("fore:#b1459f"),
   window_ids = 0,
 }
 

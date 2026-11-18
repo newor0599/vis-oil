@@ -88,24 +88,32 @@ function instance:show_changes(contents, changes_amnt)
   end
   self.directory_lines = 0
 
-  -- TODO: styles
   local height = self.window.height - 2
   local buffer = {}
 
+  contents.create_highlight = 0
   for _, i in ipairs(contents.tocreate) do
-    table.insert(buffer, "CREATE " .. Utils.normalize_path(i))
+    local str = "CREATE " .. Utils.normalize_path(i)
+    table.insert(buffer, str)
+    contents.create_highlight = contents.create_highlight + #str + 1
   end
+  contents.copy_highlight = contents.create_highlight
   for _, i in ipairs(contents.tocopy) do
     local fmt = string.format("COPY %s -> %s", i[1].name, Utils.normalize_path(i[2]))
     table.insert(buffer, fmt)
+    contents.copy_highlight = contents.copy_highlight + #fmt + 1
   end
+  contents.move_highlight = contents.copy_highlight
   for _, i in ipairs(contents.tomove) do
     local fmt = string.format("MOVE %s -> %s", i[1].name, Utils.normalize_path(i[2]))
     table.insert(buffer, fmt)
+    contents.move_highlight = contents.move_highlight + #fmt + 1
   end
+  contents.delete_highlight = contents.move_highlight
   for _, i in ipairs(contents.todelete) do
     local fmt = string.format("DELETE %s", i.name)
     table.insert(buffer, fmt)
+    contents.delete_highlight = contents.delete_highlight + #fmt + 1
   end
   buffer = table.concat(buffer, "\n")
   if changes_amnt > height then
@@ -133,13 +141,16 @@ function instance:show_changes(contents, changes_amnt)
   else
     -- They DO fit: prompt immediately
     file:insert(0, buffer)
-    self.reviewing_changes = true; -- For styles!
+    self.reviewing_changes = {
+      contents = contents
+    }; -- For styles!
     self.window:draw()
     vis:redraw()
     local answer = Utils.prompt_user("Apply these changes?", {"Yes", "No"})
 
     if answer ~= "Yes" then
       self.directory_lines = backup_dir_lines
+      self.reviewing_changes = nil
       file:delete(0, file.size)
       file:insert(0, backup)
       self.window:draw()
@@ -199,7 +210,8 @@ function instance:file_save_event(file)
     return false
   end
 
-  if type(self.reviewing_changes) == "table" then
+  if self.reviewing_changes then
+    assert(type(self.reviewing_changes) == "table")
     local answer = Utils.prompt_user("Apply?", {"Yes", "No"})
 
     if answer == "Yes" then
@@ -382,7 +394,6 @@ function instance:file_save_event(file)
   return false, applied
 end
 
--- TODO: do not highlight when oil buffer is modified
 function instance:highlight()
   if self.window == nil then
     return
@@ -390,7 +401,23 @@ function instance:highlight()
   if self.window.style == nil then
     return
   end
-  self.window:style(self.oil.DIR_COLOR, 0, self.directory_lines)
+  if not self.window.file.modified then
+    self.window:style(self.oil.DIR_COLOR, 0, self.directory_lines)
+  elseif self.reviewing_changes then
+    local c = self.reviewing_changes.contents
+    if c.create_highlight ~= 0 then
+      self.window:style(self.oil.CREATE_COLOR, 0, c.create_highlight)
+    end
+    if c.copy_highlight ~= c.create_highlight then
+      self.window:style(self.oil.COPY_COLOR, c.create_highlight, c.copy_highlight)
+    end
+    if c.move_highlight ~= c.copy_highlight then
+      self.window:style(self.oil.MOVE_COLOR, c.copy_highlight, c.move_highlight)
+    end
+    if c.delete_highlight ~= c.move_highlight then
+      self.window:style(self.oil.DELETE_COLOR, c.move_highlight, c.delete_highlight)
+    end
+  end
   -- When using vis:info during file_save_event and blocking the save operation
   -- by returning false, the message initially sent with vis:info gets overwritten
   -- by a default message about the save being blocked by a pre-hook. This system
