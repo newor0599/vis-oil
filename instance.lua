@@ -52,7 +52,7 @@ function instance:insert_data()
       name = entry["display_name"] .. "\n"
     else
       table.insert(self.active_entries, entry)
-      name = "#" .. #self.active_entries .. "| ".. entry["display_name"] .. "\n"
+      name = string.format("#%02d| %s\n", #self.active_entries, entry["display_name"])
     end
 
     if entry["is_dir"] then
