@@ -137,7 +137,8 @@ function instance:get_buffer_content(cwd)
     buffer_content = buffer_content .. name
     ::continue::
   end
-  return BufferCache.new(buffer_content, directory_lines)
+  return BufferCache.new(buffer_content, directory_lines,
+    self.oil.options.show_hidden)
 end
 
 function instance:render_entries()
@@ -221,7 +222,8 @@ function instance:cache_buffer(window)
   end
   self.oil.buffer_cache[window.oil.cwd] = BufferCache.new(
     window.file:content(0, window.file.size),
-    window.oil.directory_lines
+    window.oil.directory_lines,
+    self.oil.options.show_hidden
   )
   self.oil:log("Cached buffer for " .. window.oil.cwd)
 end
@@ -325,6 +327,7 @@ end
 function instance:evaluate_changes(cwd)
   local user_entries = self:string_to_entry(self.oil.buffer_cache[cwd].content)
   local cwd_range = self.oil.entry_cache[cwd]
+  local show_hidden = self.oil.buffer_cache[cwd].show_hidden
   local id_check = {}
   local id_delete = {}
   ---@type Actions
@@ -364,7 +367,7 @@ function instance:evaluate_changes(cwd)
       goto continue
     end
     if
-        self.oil.entry_cache[i].is_hidden and not self.oil.options.show_hidden
+        self.oil.entry_cache[i].is_hidden and not show_hidden
     then
       goto continue
     end
