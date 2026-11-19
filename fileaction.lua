@@ -6,10 +6,12 @@ function M.new_file(path)
 end
 
 function M.new_dir(path)
+  path = path:gsub('"', '\\"')
   return os.execute('mkdir -p "' .. path .. '"')
 end
 
 function M.delete(path)
+  path = path:gsub('"', '\\"')
   return os.execute('rm -rf "' .. path .. '"')
 end
 
@@ -19,7 +21,11 @@ end
 
 function M.copy(srcdst)
   return os.execute(
-    'cp -r "' .. srcdst.source .. '" "' .. srcdst.destination .. '"'
+    'cp -r "'
+      .. srcdst.source:gsub('"', '\\"')
+      .. '" "'
+      .. srcdst.destination:gsub('"', '\\"')
+      .. '"'
   )
 end
 
