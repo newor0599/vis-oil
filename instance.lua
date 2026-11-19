@@ -305,6 +305,8 @@ function instance:file_save_event(file)
       table.insert(contents.tocreate, filename)
       changes_amnt = changes_amnt + 1
     else
+      filename = filename:gsub(" %-%> .*$", "")
+      Utils.string_trim(filename)
       if filename == "" then
         if not self.dialog then self.dialog = "Error line " .. i .. ": Invalid unnamed entry with an id" end
         return false
@@ -485,6 +487,7 @@ end
 
 function instance:interact_entry()
   local entry_name = self:get_cursor_entry()
+  Utils.string_trim(entry_name)
   if not entry_name then return end
   local is_dir = entry_name:sub(-1) == "/"
   entry_name = entry_name:gsub(" %-%> .*", "")
