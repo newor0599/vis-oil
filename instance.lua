@@ -546,6 +546,7 @@ function instance:init()
 
   self.window:map(vis.modes.NORMAL, self.oil.keybinds.toggle_hidden, function()
     self.oil.options.show_hidden = not self.oil.options.show_hidden
+    self.oil.buffer_cache[self.cwd] = nil
     self:render_entries()
   end)
 end
