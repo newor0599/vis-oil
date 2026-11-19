@@ -44,6 +44,7 @@ function instance:parse_ls(ls_out, cwd)
     end
     name = name:sub(2, #name - 1)
     name = name:gsub('%" %-%> %"', (is_dir and "/" or "") .. " -> ")
+    name = name:gsub("\\(.)","%1")
 
     local no_name = line:gsub('".*', "")
     local permission_bits = params[1]:sub(2, -1)
