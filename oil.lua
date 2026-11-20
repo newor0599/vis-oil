@@ -16,14 +16,18 @@ Utils = require("vis-oil.utils")
 Shell = require("vis-oil.shell")
 Instance = require("vis-oil.instance")
 Help = require("vis-oil.help")
-EntryCache = require("vis-oil.models.entry_cache")
+Fs = require("vis-oil.fs")
 
 ---Main class for oil
 ---@class oil
 ---@field entry_cache EntryCache
 oil = {
-  DIR_COLOR = vis.ui:style_push("fore:#95AEC7"),
-  SYM_COLOR = vis.ui:style_push("fore:#C7C795"),
+  DIR_COLOR = vis.ui:style_push("fore:#95AEC7,back:#1C2023"),
+  SYM_COLOR = vis.ui:style_push("fore:#C7C795,back:#1C2023"),
+  CREATE_COLOR = vis.ui:style_push("fore:#ff9e3b"),
+  COPY_COLOR = vis.ui:style_push("fore:#d61a1a"),
+  MOVE_COLOR = vis.ui:style_push("fore:#98bb6c"),
+  DELETE_COLOR = vis.ui:style_push("fore:#b1459f"),
   window_ids = 0,
   entry_ids = 0,
   entry_cache = {},
@@ -216,6 +220,15 @@ vis:command_register("oil", function(argv)
       vis.win.oil:insert_data()
     end
   end
+end)
+
+vis.events.subscribe(vis.events.INIT, function ()
+  oil.DIR_COLOR = vis.ui:style_push("fore:#95AEC7")
+  oil.SYM_COLOR = vis.ui:style_push("fore:#C7C795")
+  oil.CREATE_COLOR = vis.ui:style_push("fore:#ff9e3b")
+  oil.COPY_COLOR = vis.ui:style_push("fore:#d61a1a")
+  oil.MOVE_COLOR = vis.ui:style_push("fore:#98bb6c")
+  oil.DELETE_COLOR = vis.ui:style_push("fore:#b1459f")
 end)
 
 setmetatable(oil, { __call = oil.init })
