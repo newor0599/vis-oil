@@ -23,6 +23,8 @@ function M.get_ls(cwd)
   return ls_out
 end
 
+---@param path string
+---@return boolean
 function M.can_access_path(path)
   local data = io.popen('test -r "' .. path .. '" && echo "yes" || echo "no"')
     :lines("a")()

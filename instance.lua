@@ -16,10 +16,93 @@ instance.__index = instance
 
 function instance:cd(path)
   if Shell.can_access_path(path) then
-    self.cwd = path
+    self.cwd = Utils.normalize_path(path)
     return true
   end
   return false
+end
+
+---@param ls_out string Output of `ls -laQ`
+---@param cwd string Current working directory
+---@return Entry[]
+function instance:parse_ls(ls_out, cwd)
+  local _, header_end = ls_out:find("^total %d+\n")
+  ls_out = ls_out:sub(header_end + 1, #ls_out - 1)
+
+  local entries = {}
+
+  local entry_lines = ls_out:gmatch("[^\n]+")
+
+  for line in entry_lines do
+    ---@type string[]
+    local params = {}
+    for param in line:gmatch("[^ ]+") do
+      params[#params + 1] = param
+    end
+
+    local name = line:match('".*')
+    local is_dir = name:sub(-1) == "/"
+    if is_dir then
+      name = name:sub(1, #name - 1)
+    end
+    name = name:sub(2, #name - 1)
+    name = name:gsub('%" %-%> %"', (is_dir and "/" or "") .. " -> ")
+
+    local no_name = line:gsub('".*', "")
+    local permission_bits = params[1]:sub(2, -1)
+    local owner_user = params[3]
+    local owner_group = params[4]
+    local type = params[1]:sub(1, 1)
+    local id = self.oil:make_entry_id()
+    local date = no_name:sub(-13, -2)
+    local size = ""
+    for v in no_name:gmatch("[^ ]+") do
+      size = v
+    end
+
+    local entry = Entry.new(
+      type,
+      permission_bits,
+      owner_user,
+      owner_group,
+      size,
+      date,
+      name,
+      cwd,
+      is_dir,
+      id
+    )
+
+    entries[#entries + 1] = entry
+  end
+  return entries
+end
+
+---@param cwd? string
+---@return Entry[]
+function instance:get_entries(cwd)
+  if not cwd then
+    cwd = self.cwd
+  end
+
+  local range = self.oil.entry_cache[cwd]
+  local list = {}
+
+  if range then
+    ---@type Entry[]
+    self.oil:log("Using cache entries")
+    for i = range.start, range.finish, 1 do
+      list[#list + 1] = self.oil.entry_cache[i]
+    end
+    return list
+  end
+
+  self.oil:log("Grabbing fresh entries")
+  local ls_out = Shell.get_ls(self.cwd)
+  list = self:parse_ls(ls_out, self.cwd)
+  table.move(list, 1, #list, #self.oil.entry_cache + 1, self.oil.entry_cache)
+  self.oil.entry_cache[cwd] = { start = list[1].id, finish = list[#list].id }
+  return list
 end
 
 function instance:insert_data()
@@ -27,20 +110,21 @@ function instance:insert_data()
   self.active_entries = {}
   self.reviewing_changes = nil
 
-  local ls_out = Shell.get_ls(self.cwd)
-  local entries = Utils.parse_ls(ls_out, self.cwd)
+  local entries = self:get_entries()
 
   local buffer_content = ""
   local select_cursor = 0
   local visible_lines = 0
-  local original_file_name = tostring(self.original_file):gmatch("[^%/]+$")()
+  local original_file_name = tostring(self.original_file):match("[^%/]+$")
   self.directory_lines = 0
 
   for _, entry in ipairs(entries) do
     ---@cast entry Entry
+
     if entry["display_name"] == "./" then
       goto continue
     end
+
     if entry["is_hidden"] and not self.oil.options.show_hidden then
       goto continue
     end
@@ -71,7 +155,7 @@ function instance:insert_data()
   self.window:draw()
   vis.win = self.window
   vis:feedkeys("gg")
-  if select_cursor > 2 then
+  if select_cursor > 1 then
     vis:feedkeys(tostring(select_cursor) .. "G")
   end
   self.window.file.modified = false
@@ -465,6 +549,8 @@ function instance:clear_data(force)
     end
   end
   self.oil.window_ids = 0
+  self.oil.entry_ids = 0
+  self.oil.entry_cache = {}
 end
 
 function instance:get_cursor_entry()
@@ -495,15 +581,24 @@ function instance:interact_entry()
     return
   end
 
-  local cwd = Utils.normalize_path(self.cwd .. entry_name)
+  local cwd = Utils.normalize_path(self.cwd .. entry.name)
   local can_access = Shell.can_access_path(cwd)
   if not can_access then
     vis:info("No permission to access this path")
     return
   end
-  if is_dir then
-    self:cd(cwd)
-    self:insert_data()
+
+  if entry.name ~= "../" then
+    if entry.type:find("[-dl]") == nil then
+      vis:info("Not an editable ascii file")
+      return
+    end
+  end
+
+  if entry.is_dir then
+    if self:cd(cwd) then
+      self:insert_data()
+    end
   else
     self:end_instance()
     vis:command('e! "' .. cwd .. '"')

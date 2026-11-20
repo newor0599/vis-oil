@@ -2,7 +2,7 @@
 
 > ⚠️ **Very early stage.** Expect bugs, missing features, breaking changes and security issues.
 
-> ⚠️ Not working on windows
+> ⚠️ Only tested on linux, not on other posix system
 
 > ⚠️ There is a possible security vulnerebility of **command injection** attack, BEWARE!
 
@@ -18,13 +18,14 @@ Edit your filesystem like a text buffer.
 - Traverse directory
 - Open file
 
+> A testing of copy,delete,rename,create,move is available to test on branch oil_function_v3
 ### Planned
 - Copy
 - Delete
 - Rename
 - Create
 - Move
-- Windows support
+- Full posix system support
 
 ### Installation
 With vis-plug
@@ -35,6 +36,9 @@ With vis-plug
 
 ### Configuration
 ```lua
+-- Initialize default configuration
+oil()
+
 -- Show hidden files
 oil.options.show_hidden = true
 
