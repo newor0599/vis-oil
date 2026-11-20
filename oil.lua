@@ -139,8 +139,9 @@ function oil:open(method)
   end
 
   local window = vis.win
-  local instance = Instance.new(self, window, cwd, original_file)
+  window.file = ""
   window.file = window_name
+  local instance = Instance.new(self, window, cwd, original_file)
   window.oil = instance
 
   instance:render_entries()

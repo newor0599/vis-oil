@@ -43,7 +43,7 @@ function instance:parse_ls(ls_out, cwd)
       name = name:sub(1, #name - 1)
     end
     name = name:sub(2, #name - 1)
-    name = name:gsub('%" %-%> %"', (is_dir and "/" or "") .. " -> ")
+    name = name:gsub('%" %-%> %"', " -> ")
     name = name:gsub("\\(.)","%1")
 
     local no_name = line:gsub('".*', "")
