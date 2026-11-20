@@ -44,6 +44,7 @@ function instance:parse_ls(ls_out, cwd)
     end
     name = name:sub(2, #name - 1)
     name = name:gsub('%" %-%> %"', " -> ")
+    name = name:gsub("\\(.)", "%1")
 
     local no_name = line:gsub('".*', "")
     local permission_bits = params[1]:sub(2, -1)
@@ -102,16 +103,20 @@ function instance:get_entries(cwd)
   return list
 end
 
-function instance:insert_data()
-  self.window.file:delete({ start = 0, finish = self.window.file.size })
+function instance:get_buffer_content(cwd)
+  if cwd == nil then
+    cwd = self.cwd
+  end
+  if self.oil.buffer_cache[cwd] then
+    self.oil:log("Using buffer cache")
+    return self.oil.buffer_cache[cwd]
+  end
+  self.oil:log("Using new data")
 
   local entries = self:get_entries()
 
   local buffer_content = ""
-  local select_cursor = 0
-  local visible_lines = 0
-  local original_file_name = tostring(self.original_file):match("[^%/]+$")
-  self.directory_lines = 0
+  local directory_lines = 0
 
   for _, entry in ipairs(entries) do
     ---@cast entry Entry
@@ -124,28 +129,42 @@ function instance:insert_data()
       goto continue
     end
 
-    visible_lines = visible_lines + 1
     local id = Utils.int_to_id(entry.id)
     local name = "/" .. id .. " " .. entry["display_name"] .. "\n"
     if entry["is_dir"] then
-      self.directory_lines = self.directory_lines + #name
+      directory_lines = directory_lines + #name
     end
 
     buffer_content = buffer_content .. name
-
-    if entry.name == original_file_name then
-      select_cursor = visible_lines
-    end
     ::continue::
   end
+  return BufferCache.new(buffer_content, directory_lines,
+    self.oil.options.show_hidden)
+end
 
-  self.window.file:insert(0, buffer_content)
+function instance:render_entries()
+  self.window.file:delete({ start = 0, finish = self.window.file.size })
+  local buffer_cache = self:get_buffer_content()
+
+  self.window.file:insert(0, buffer_cache.content)
+  self.directory_lines = buffer_cache.dir_highlight
   self.window:draw()
-  vis.win = self.window
   vis:feedkeys("gg")
-  if select_cursor > 1 then
-    vis:feedkeys(tostring(select_cursor) .. "G")
+
+  if tostring(self.original_file):gsub("[^/]+$", "") == self.cwd then
+    local select_cursor = 0
+    local orig_filename = self.original_file:match("[^/]+$")
+    for entry in buffer_cache.content:gmatch("[^\n]+") do
+      select_cursor = select_cursor + 1
+      if entry:gsub("^/[a-f0-9]+ ", "") == orig_filename then
+        break
+      end
+    end
+    if select_cursor > 1 then
+      vis:feedkeys(tostring(select_cursor) .. "G")
+    end
   end
+
   self.window.file.modified = false
 end
 
@@ -165,6 +184,7 @@ function instance:end_instance()
   end
   vis.events.unsubscribe(vis.events.WIN_CLOSE, self.close_handler)
   vis.events.unsubscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
+  vis.events.unsubscribe(vis.events.FILE_SAVE_POST, self.post_write_handler)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.goto_parent)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.interact)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.quit)
@@ -194,6 +214,19 @@ function instance:clear_data(force)
   self.oil.window_ids = 0
   self.oil.entry_ids = 0
   self.oil.entry_cache = {}
+  self.oil.buffer_cache = {}
+end
+
+function instance:cache_buffer(window)
+  if window == nil then
+    window = self.window
+  end
+  self.oil.buffer_cache[window.oil.cwd] = BufferCache.new(
+    window.file:content(0, window.file.size),
+    window.oil.directory_lines,
+    self.oil.options.show_hidden
+  )
+  self.oil:log("Cached buffer for " .. window.oil.cwd)
 end
 
 function instance:get_cursor_entry()
@@ -239,23 +272,229 @@ function instance:interact_entry()
   end
 
   if entry.is_dir then
-    if self:cd(cwd) then
-      self:insert_data()
+    if cwd:sub(-1) ~= "/" then
+      cwd = cwd .. "/"
+    end
+    if Shell.can_access_path(cwd) then
+      self:cache_buffer()
+      self.cwd = Utils.normalize_path(cwd)
+      self:render_entries()
     end
   else
     self:end_instance()
-    vis:command('e! "' .. cwd .. '"')
+    self.window.file = cwd
     self:clear_data()
   end
 end
 
 function instance:goto_parent()
   local cwd = Utils.normalize_path(self.cwd .. "../")
-  if self:cd(cwd) then
-    self:insert_data()
+  if Shell.can_access_path(cwd) then
+    self:cache_buffer()
+    self.cwd = cwd
+    self:render_entries()
     return
   end
   vis:info("No permission to access this path")
+end
+
+---@param content string
+---@return Entry[]
+function instance:string_to_entry(content)
+  local entries = {
+    [0] = {},
+  }
+  for line in content:gmatch("[^\n]+") do
+    ---@cast line string
+    if line:find("/[0-9a-f]+ .*") then
+      local is_dir = line:sub(-1) == "/"
+      local id = line:match("[^/][0-9a-f]+")
+      id = tonumber(id, 16)
+      local entry = self.oil.entry_cache[id]
+      local display_name = line:match(" .*")
+      display_name = display_name:sub(2, #display_name)
+      local name = display_name:gsub(" %-> .*", "")
+      entries[#entries + 1] = {
+        name = name,
+        display_name = display_name,
+        path = entry.path,
+        id = entry.id,
+        is_dir = is_dir,
+      }
+    else
+      entries[0][#entries[0] + 1] = line
+    end
+  end
+  return entries
+end
+
+function instance:evaluate_changes(cwd)
+  local user_entries = self:string_to_entry(self.oil.buffer_cache[cwd].content)
+  local cwd_range = self.oil.entry_cache[cwd]
+  local show_hidden = self.oil.buffer_cache[cwd].show_hidden
+  local id_check = {}
+  local id_delete = {}
+  ---@type Actions
+  local actions = Actions.new()
+  for _, user_entry in ipairs(user_entries) do
+    if user_entry.name == self.oil.entry_cache[user_entry.id].name then
+      id_check[user_entry.id] = true
+    end
+  end
+
+  for _, user_entry in ipairs(user_entries) do
+    local orig_entry = self.oil.entry_cache[user_entry.id]
+    if user_entry.id > cwd_range.finish or user_entry.id < cwd_range.start then
+      actions.copy[#actions.copy + 1] = SourceDestination.new(
+        orig_entry.path .. orig_entry.name,
+        self.cwd .. user_entry.name
+      )
+    elseif user_entry.name ~= orig_entry.name and not id_check[user_entry.id] then
+      id_check[user_entry.id] = true
+      actions.move[#actions.move + 1] = SourceDestination.new(
+        orig_entry.path .. orig_entry.name,
+        self.cwd .. user_entry.name
+      )
+    elseif user_entry.name ~= orig_entry.name and id_check[user_entry.id] then
+      actions.copy[#actions.copy + 1] = SourceDestination.new(
+        orig_entry.path .. orig_entry.name,
+        self.cwd .. user_entry.name
+      )
+    end
+  end
+
+  for i = cwd_range.start, cwd_range.finish do
+    if id_check[i] then
+      goto continue
+    end
+    if self.oil.entry_cache[i].name == "./" then
+      goto continue
+    end
+    if
+        self.oil.entry_cache[i].is_hidden and not show_hidden
+    then
+      goto continue
+    end
+    id_delete[#id_delete + 1] = i
+    actions.delete[#actions.delete + 1] = self.oil.entry_cache[i].path ..
+        self.oil.entry_cache[i].name
+    ::continue::
+  end
+
+  for _, name in ipairs(user_entries[0]) do
+    if #name > 0 then
+      if name:sub(-1) == "/" then
+        actions.dir[#actions.dir + 1] = self.cwd .. name
+      else
+        actions.file[#actions.file + 1] = self.cwd .. name
+      end
+    end
+  end
+  return actions
+end
+
+---@param actions_list Actions[]
+---@return Actions
+function instance:evaluate_cross_cwd_diff(actions_list)
+  local actions = Actions.new()
+  for index, value in ipairs(actions_list) do
+    actions = actions .. value
+  end
+
+  if #actions.delete <= 0 then
+    return actions
+  end
+
+  local copy_set = {}
+  local new_move = {}
+  local new_delete = {}
+  local copy_to_del_index = {}
+  ---@cast actions Actions
+  for index, value in ipairs(actions.copy) do
+    copy_set[value.source] = index
+  end
+
+  for _, del_path in ipairs(actions.delete) do
+    local copy_index = copy_set[del_path]
+    if copy_index then
+      new_move[#new_move + 1] = actions.copy[copy_index]
+      copy_to_del_index[#copy_to_del_index + 1] = copy_index
+      copy_index = nil
+    else
+      new_delete[#new_delete + 1] = del_path
+    end
+  end
+
+  table.sort(copy_to_del_index)
+  for index, value in ipairs(copy_to_del_index) do
+    actions.copy[value - index + 1] = nil
+  end
+
+  actions.delete = new_delete
+  table.move(new_move, 1, #new_move, #actions.move + 1, actions.move)
+  return actions
+end
+
+---@param file vis.file
+---@param path string
+function instance:post_write_action(file, path)
+  -- prevent other instance trigger post write action
+  if self.window.file.path ~= path then
+    return
+  end
+
+  self.oil:log("Executing post write action")
+  self:cache_buffer()
+
+  local actions_list = {}
+  for cwd, _ in pairs(self.oil.buffer_cache) do
+    actions_list[#actions_list + 1] = self:evaluate_changes(cwd)
+  end
+  local actions = self:evaluate_cross_cwd_diff(actions_list)
+
+  if #tostring(actions) <= 0 then
+    vis:info("No changes")
+    return
+  end
+
+  vis:message(tostring(actions))
+  vis:redraw()
+  local answer = Utils.prompt_user("Apply changes?", { "no", "yes", "cancel" })
+  self.oil:log("User answered " .. tostring(answer))
+
+  if answer == "yes" then
+    for _, value in ipairs(actions.file) do
+      FileAction.new_file(value)
+    end
+    for _, value in ipairs(actions.dir) do
+      FileAction.new_dir(value)
+    end
+    for _, value in ipairs(actions.copy) do
+      FileAction.copy(value)
+    end
+    for _, value in ipairs(actions.move) do
+      FileAction.move(value)
+    end
+    for _, value in ipairs(actions.delete) do
+      FileAction.delete(value)
+    end
+    self.oil.entry_cache[self.cwd] = nil
+  end
+
+  FileAction.delete(self.window.file.path)
+
+  vis:message("")
+  vis:feedkeys("gg")
+  vis:feedkeys("V")
+  vis:feedkeys("G")
+  vis:feedkeys("x")
+  vis.win.file = ""
+  vis.win:close(true)
+
+  if answer == "yes" or answer == "no" then
+    self.oil.buffer_cache[self.cwd] = nil
+    self:render_entries()
+  end
 end
 
 function instance:init()
@@ -267,8 +506,13 @@ function instance:init()
     self:window_closed(win)
   end
 
+  self.post_write_handler = function(file, path)
+    self:post_write_action(file, path)
+  end
+
   vis.events.subscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
   vis.events.subscribe(vis.events.WIN_CLOSE, self.close_handler)
+  vis.events.subscribe(vis.events.FILE_SAVE_POST, self.post_write_handler)
 
   self.window:map(vis.modes.NORMAL, self.oil.keybinds.goto_parent, function()
     self:goto_parent()
@@ -306,7 +550,8 @@ function instance:init()
 
   self.window:map(vis.modes.NORMAL, self.oil.keybinds.toggle_hidden, function()
     self.oil.options.show_hidden = not self.oil.options.show_hidden
-    self:insert_data()
+    self.oil.buffer_cache[self.cwd] = nil
+    self:render_entries()
   end)
 end
 

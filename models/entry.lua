@@ -26,21 +26,21 @@ local Entry = {}
 ---@param id integer
 ---@return Entry
 function Entry.new(
-  type,
-  permissions,
-  user_owner,
-  group_owner,
-  size,
-  date,
-  name,
-  cwd,
-  is_dir,
-  id
+    type,
+    permissions,
+    user_owner,
+    group_owner,
+    size,
+    date,
+    name,
+    cwd,
+    is_dir,
+    id
 )
   ---@type string
   local display_name = name
   local file_name = name:gsub(" %-> .*", "")
-  if is_dir and file_name:sub(-1) ~= "/" then
+  if is_dir and file_name:sub(-1) ~= "/" and type ~= 'l' then
     file_name = file_name .. "/"
   end
 

@@ -17,14 +17,13 @@ Edit your filesystem like a text buffer.
 - List cwd
 - Traverse directory
 - Open file
-
-> A testing of copy,delete,rename,create,move is available to test on branch oil_function_v3
-### Planned
 - Copy
 - Delete
 - Rename
 - Create
 - Move
+
+### Planned
 - Full posix system support
 
 ### Installation
@@ -62,4 +61,7 @@ oil:map_open_horizontal(" hh")
 
 -- open oil horizontally
 :oil open_horizontal
+
+-- show help menu
+:oil help
 ```

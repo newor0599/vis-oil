@@ -16,11 +16,15 @@ Utils = require("vis-oil.utils")
 Shell = require("vis-oil.shell")
 Instance = require("vis-oil.instance")
 Help = require("vis-oil.help")
-EntryCache = require("vis-oil.models.entry_cache")
+SourceDestination = require("vis-oil.models.srcdst")
+FileAction = require("vis-oil.fileaction")
+Actions = require("vis-oil.models.actions")
+BufferCache = require("vis-oil.models.buffer_cache")
 
 ---Main class for oil
 ---@class oil
 ---@field entry_cache EntryCache
+---@field buffer_cache BufferCache[]
 oil = {
   DIR_COLOR = vis.ui:style_push("fore:#95AEC7"),
   SYM_COLOR = vis.ui:style_push("fore:#C7C795"),
@@ -31,6 +35,7 @@ oil = {
   window_ids = 0,
   entry_ids = 0,
   entry_cache = {},
+  buffer_cache = {},
 }
 
 function oil:make_window_id()
@@ -138,11 +143,12 @@ function oil:open(method)
   end
 
   local window = vis.win
-  local instance = Instance.new(self, window, cwd, original_file)
+  window.file = ""
   window.file = window_name
+  local instance = Instance.new(self, window, cwd, original_file)
   window.oil = instance
 
-  instance:insert_data()
+  instance:render_entries()
 end
 
 function oil.open_vertical()
