@@ -165,5 +165,14 @@ vis:command_register("oil", function(argv)
   end
 end)
 
+vis.events.subscribe(vis.events.INIT, function ()
+  oil.DIR_COLOR = vis.ui:style_push("fore:#95AEC7")
+  oil.SYM_COLOR = vis.ui:style_push("fore:#C7C795")
+  oil.CREATE_COLOR = vis.ui:style_push("fore:#ff9e3b")
+  oil.COPY_COLOR = vis.ui:style_push("fore:#d61a1a")
+  oil.MOVE_COLOR = vis.ui:style_push("fore:#98bb6c")
+  oil.DELETE_COLOR = vis.ui:style_push("fore:#b1459f")
+end)
+
 setmetatable(oil, { __call = oil.init })
 return oil
