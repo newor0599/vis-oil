@@ -44,7 +44,7 @@ function instance:parse_ls(ls_out, cwd)
     end
     name = name:sub(2, #name - 1)
     name = name:gsub('%" %-%> %"', " -> ")
-    name = name:gsub("\\(.)","%1")
+    name = name:gsub("\\(.)", "%1")
 
     local no_name = line:gsub('".*', "")
     local permission_bits = params[1]:sub(2, -1)
@@ -272,6 +272,9 @@ function instance:interact_entry()
   end
 
   if entry.is_dir then
+    if cwd:sub(-1) ~= "/" then
+      cwd = cwd .. "/"
+    end
     if Shell.can_access_path(cwd) then
       self:cache_buffer()
       self.cwd = Utils.normalize_path(cwd)
@@ -279,7 +282,7 @@ function instance:interact_entry()
     end
   else
     self:end_instance()
-    vis:command('e! "' .. cwd .. '"')
+    self.window.file = cwd
     self:clear_data()
   end
 end
