@@ -32,7 +32,6 @@ With vis-plug
 { "newor0599/vis-oil", alias="oil" },
 ```
 
-
 ### Configuration
 ```lua
 -- Initialize default configuration
@@ -65,3 +64,7 @@ oil:map_open_horizontal(" hh")
 -- show help menu
 :oil help
 ```
+
+### Contribution
+- Pull request for new feature or issues are welcome!
+- Report bugs as an issue

@@ -130,7 +130,7 @@ function instance:get_buffer_content(cwd)
     end
 
     local id = Utils.int_to_id(entry.id)
-    local name = "/" .. id .. " " .. entry["display_name"] .. "\n"
+    local name = id .. "| " .. entry["display_name"] .. "\n"
     if entry["is_dir"] then
       directory_lines = directory_lines + #name
     end
@@ -156,7 +156,7 @@ function instance:render_entries()
     local orig_filename = self.original_file:match("[^/]+$")
     for entry in buffer_cache.content:gmatch("[^\n]+") do
       select_cursor = select_cursor + 1
-      if entry:gsub("^/[a-f0-9]+ ", "") == orig_filename then
+      if entry:gsub(self.oil.NAME_GSUB, "") == orig_filename then
         break
       end
     end
@@ -164,6 +164,9 @@ function instance:render_entries()
       vis:feedkeys(tostring(select_cursor) .. "G")
     end
   end
+
+  vis:feedkeys("e")
+  vis:feedkeys("3l")
 
   self.window.file.modified = false
 end
@@ -184,7 +187,7 @@ function instance:end_instance()
   end
   vis.events.unsubscribe(vis.events.WIN_CLOSE, self.close_handler)
   vis.events.unsubscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
-  vis.events.unsubscribe(vis.events.FILE_SAVE_POST, self.post_write_handler)
+  vis.events.unsubscribe(vis.events.FILE_SAVE_PRE, self.pre_write_handler)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.goto_parent)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.interact)
   self.window:unmap(vis.modes.NORMAL, self.oil.keybinds.quit)
@@ -244,12 +247,12 @@ end
 
 function instance:interact_entry()
   local cursor_content = self:get_cursor_entry()
-  cursor_content = cursor_content:match("/[a-f0-9]+ .*")
+  cursor_content = cursor_content:match(self.oil.ENTRY_STRUCT)
   if not cursor_content then
     vis:info("Invalid path")
     return
   end
-  local id = cursor_content:match("[^/][a-f0-9]+ ")
+  local id = cursor_content:match(self.oil.ID_MATCH)
   id = tonumber(id, 16)
   local entry = self.oil.entry_cache[id]
   if entry == nil then
@@ -306,9 +309,9 @@ function instance:string_to_entry(content)
   }
   for line in content:gmatch("[^\n]+") do
     ---@cast line string
-    if line:find("/[0-9a-f]+ .*") then
+    if line:find(self.oil.ENTRY_STRUCT) then
       local is_dir = line:sub(-1) == "/"
-      local id = line:match("[^/][0-9a-f]+")
+      local id = line:match(self.oil.ID_MATCH)
       id = tonumber(id, 16)
       local entry = self.oil.entry_cache[id]
       local display_name = line:match(" .*")
@@ -437,7 +440,7 @@ end
 
 ---@param file vis.file
 ---@param path string
-function instance:post_write_action(file, path)
+function instance:pre_write_action(file, path)
   -- prevent other instance trigger post write action
   if self.window.file.path ~= path then
     return
@@ -481,8 +484,6 @@ function instance:post_write_action(file, path)
     self.oil.entry_cache[self.cwd] = nil
   end
 
-  FileAction.delete(self.window.file.path)
-
   vis:message("")
   vis:feedkeys("gg")
   vis:feedkeys("V")
@@ -506,13 +507,14 @@ function instance:init()
     self:window_closed(win)
   end
 
-  self.post_write_handler = function(file, path)
-    self:post_write_action(file, path)
+  self.pre_write_handler = function(file, path)
+    self:pre_write_action(file, path)
+    return false
   end
 
   vis.events.subscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
   vis.events.subscribe(vis.events.WIN_CLOSE, self.close_handler)
-  vis.events.subscribe(vis.events.FILE_SAVE_POST, self.post_write_handler)
+  vis.events.subscribe(vis.events.FILE_SAVE_PRE, self.pre_write_handler)
 
   self.window:map(vis.modes.NORMAL, self.oil.keybinds.goto_parent, function()
     self:goto_parent()
@@ -526,7 +528,7 @@ function instance:init()
     -- Restore original file
     if self.original_file then
       self:end_instance()
-      vis:command('e! "' .. self.original_file .. '"')
+      self.window.file = self.original_file
       self:clear_data()
       return
     end

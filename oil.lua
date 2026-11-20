@@ -21,6 +21,7 @@ FileAction = require("vis-oil.fileaction")
 Actions = require("vis-oil.models.actions")
 BufferCache = require("vis-oil.models.buffer_cache")
 
+
 ---Main class for oil
 ---@class oil
 ---@field entry_cache EntryCache
@@ -32,10 +33,18 @@ oil = {
   COPY_COLOR = vis.ui:style_push("fore:#d61a1a"),
   MOVE_COLOR = vis.ui:style_push("fore:#98bb6c"),
   DELETE_COLOR = vis.ui:style_push("fore:#b1459f"),
+  ENTRY_STRUCT = "^[a-f0-9]+| .*",
+  ID_MATCH = "[a-f0-9]+",
+  NAME_GSUB = "^[a-f0-9]+| ",
   window_ids = 0,
   entry_ids = 0,
   entry_cache = {},
   buffer_cache = {},
+}
+
+oil.options = {
+  show_hidden = false,
+  debug = false,
 }
 
 function oil:make_window_id()
@@ -56,11 +65,6 @@ function oil:log(message)
     vis.win = current_win
   end
 end
-
-oil.options = {
-  show_hidden = false,
-  debug = false,
-}
 
 oil.keybinds = {
   interact = "<Enter>",
@@ -118,13 +122,13 @@ function oil:open(method)
     vis:command("new")
   elseif method == "buffer" then
     if vis.win.file.modified then
-      local ans = Utils.prompt_user("Save changes?", { "Yes", "No", "Cancel" })
+      local ans = Utils.prompt_user("Save changes?", { "yes", "no", "cancel" })
       if ans == nil then
         return
       end
-      if ans == "Cancel" then
+      if ans == "cancel" then
         return
-      elseif ans == "No" then
+      elseif ans == "no" then
       else
         vis:command("w")
       end
@@ -228,7 +232,7 @@ vis:command_register("oil", function(argv)
   end
 end)
 
-vis.events.subscribe(vis.events.INIT, function ()
+vis.events.subscribe(vis.events.INIT, function()
   oil.DIR_COLOR = vis.ui:style_push("fore:#95AEC7")
   oil.SYM_COLOR = vis.ui:style_push("fore:#C7C7ff")
   oil.CREATE_COLOR = vis.ui:style_push("fore:#ff9e3b")
