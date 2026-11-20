@@ -286,6 +286,9 @@ function instance:interact_entry()
   else
     self:end_instance()
     self.window.file = cwd
+    local syntax = self.window.file.name:match("[^%.]+$")
+    syntax = Utils.extension_syntax[syntax] or syntax
+    self.window:set_syntax(syntax)
     self:clear_data()
   end
 end
@@ -529,6 +532,9 @@ function instance:init()
     if self.original_file then
       self:end_instance()
       self.window.file = self.original_file
+      local syntax = self.original_file:match("[^%.]+$")
+      syntax = Utils.extension_syntax[syntax] or syntax
+      self.window:set_syntax(syntax)
       self:clear_data()
       return
     end

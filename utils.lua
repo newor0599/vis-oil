@@ -64,4 +64,8 @@ function M.prompt_user(prompt, choices)
   return choice
 end
 
+M.extension_syntax = {
+  py = "python",
+}
+
 return M
