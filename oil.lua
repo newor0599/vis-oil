@@ -43,7 +43,7 @@ oil = {
 }
 
 oil.options = {
-  show_hidden = false,
+  show_hidden = true,
   debug = false,
 }
 
@@ -74,7 +74,6 @@ oil.keybinds = {
   open_buffer = " e",
   open_vertical = " vv",
   open_horizontal = " hh",
-  toggle_hidden = ".",
 }
 
 function oil:map_interact(key)

@@ -229,7 +229,7 @@ function instance:cache_buffer(window)
     window.oil.directory_lines,
     self.oil.options.show_hidden
   )
-  self.oil:log("Cached buffer for " .. window.oil.cwd)
+  self.oil:log("Cached buffer for " .. window.oil.cwd .. "; Show hidden: " .. tostring(self.oil.options.show_hidden))
 end
 
 function instance:get_cursor_entry()
@@ -554,12 +554,6 @@ function instance:init()
 
   self.window:map(vis.modes.NORMAL, self.oil.keybinds.print_cwd, function()
     vis:info(self.cwd)
-  end)
-
-  self.window:map(vis.modes.NORMAL, self.oil.keybinds.toggle_hidden, function()
-    self.oil.options.show_hidden = not self.oil.options.show_hidden
-    self.oil.buffer_cache[self.cwd] = nil
-    self:render_entries()
   end)
 end
 
