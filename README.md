@@ -1,6 +1,8 @@
 # vis-oil
 
-> ⚠️ **Very early stage.** Expect bugs, missing features, breaking changes and security issues.
+## V1 is now out with stable features :) 
+
+> ⚠️ Mostly stable, still hunting for bugs and security issues.
 
 > ⚠️ Only tested on linux, not on other posix system
 
