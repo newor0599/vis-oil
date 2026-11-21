@@ -178,7 +178,7 @@ function instance:highlight()
   if self.window.style == nil then
     return
   end
-  self.window:style(self.oil.DIR_COLOR, 0, self.directory_lines)
+  self.window:style(self.oil.DIR_COLOR, 0, self.directory_lines - 1)
 end
 
 function instance:end_instance()
@@ -342,6 +342,8 @@ function instance:evaluate_changes(cwd)
   local id_delete = {}
   ---@type Actions
   local actions = Actions.new()
+
+  -- Record all remaining id
   for _, user_entry in ipairs(user_entries) do
     if user_entry.name == self.oil.entry_cache[user_entry.id].name then
       id_check[user_entry.id] = true
@@ -350,17 +352,20 @@ function instance:evaluate_changes(cwd)
 
   for _, user_entry in ipairs(user_entries) do
     local orig_entry = self.oil.entry_cache[user_entry.id]
+    -- Identify copy from other directory
     if user_entry.id > cwd_range.finish or user_entry.id < cwd_range.start then
       actions.copy[#actions.copy + 1] = SourceDestination.new(
         orig_entry.path .. orig_entry.name,
         self.cwd .. user_entry.name
       )
-    elseif user_entry.name ~= orig_entry.name and not id_check[user_entry.id] then
+      -- Identify rename
+    elseif user_entry.name ~= orig_entry.name and not id_check[user_entry.id] and #user_entry.name > 0 then
       id_check[user_entry.id] = true
       actions.move[#actions.move + 1] = SourceDestination.new(
         orig_entry.path .. orig_entry.name,
         self.cwd .. user_entry.name
       )
+      --Identify copy from cwd
     elseif user_entry.name ~= orig_entry.name and id_check[user_entry.id] then
       actions.copy[#actions.copy + 1] = SourceDestination.new(
         orig_entry.path .. orig_entry.name,
@@ -369,6 +374,7 @@ function instance:evaluate_changes(cwd)
     end
   end
 
+  -- Identify deleted
   for i = cwd_range.start, cwd_range.finish do
     if id_check[i] then
       goto continue
@@ -387,14 +393,19 @@ function instance:evaluate_changes(cwd)
     ::continue::
   end
 
+  -- Identify new
   for _, name in ipairs(user_entries[0]) do
-    if #name > 0 then
-      if name:sub(-1) == "/" then
-        actions.dir[#actions.dir + 1] = self.cwd .. name
-      else
-        actions.file[#actions.file + 1] = self.cwd .. name
-      end
+    if #name <= 0 then
+      goto continue
     end
+
+    if name:sub(-1) == "/" then
+      actions.dir[#actions.dir + 1] = self.cwd .. name
+    else
+      actions.file[#actions.file + 1] = self.cwd .. name
+    end
+
+    ::continue::
   end
   return actions
 end

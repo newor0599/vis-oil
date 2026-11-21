@@ -112,14 +112,14 @@ end
 
 ---@param method? "horizontal"|"vertical"|"buffer" Start oil at current buffer/horizontally/vertically (default)
 function oil:open(method)
-  local window_id = self:make_window_id()
-  local window_name = "Oil " .. tostring(window_id)
-  local cwd = Shell.get_win_cwd()
   local original_file = nil
 
   if method == "horizontal" then
     vis:command("new")
   elseif method == "buffer" then
+    if vis.win.oil then
+      return
+    end
     if vis.win.file.modified then
       local ans = Utils.prompt_user("Save changes?", { "yes", "no", "cancel" })
       if ans == nil then
@@ -141,9 +141,9 @@ function oil:open(method)
     vis:command("vnew")
   end
 
-  if tostring(vis.win.file.name):find("^Oil %d+$") then
-    return
-  end
+  local window_id = self:make_window_id()
+  local window_name = "Oil " .. tostring(window_id)
+  local cwd = Shell.get_win_cwd()
 
   local window = vis.win
   window.file = ""

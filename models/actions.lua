@@ -32,6 +32,7 @@ function M.tostring(t)
     for _, path in ipairs(t.dir) do
       string = string .. "- " .. path .. "\n"
     end
+    string = string .. "\n"
   end
 
   if #t.copy > 0 then
@@ -44,6 +45,7 @@ function M.tostring(t)
         .. srcdst.destination
         .. "\n"
     end
+    string = string .. "\n"
   end
 
   if #t.move > 0 then
@@ -56,6 +58,7 @@ function M.tostring(t)
         .. srcdst.destination
         .. "\n"
     end
+    string = string .. "\n"
   end
 
   if #t.delete > 0 then
@@ -63,6 +66,7 @@ function M.tostring(t)
     for _, path in ipairs(t.delete) do
       string = string .. "- " .. path .. "\n"
     end
+    string = string .. "\n"
   end
   return string
 end
