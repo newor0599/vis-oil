@@ -130,7 +130,7 @@ function instance:get_buffer_content(cwd)
     end
 
     local id = Utils.int_to_id(entry.id)
-    local name = id .. "| " .. entry["display_name"] .. "\n"
+    local name = id .. "│ " .. entry["display_name"] .. "\n"
     if entry["is_dir"] then
       directory_lines = directory_lines + #name
     end
@@ -166,7 +166,7 @@ function instance:render_entries()
   end
 
   vis:feedkeys("e")
-  vis:feedkeys("3l")
+  vis:feedkeys("2l")
 
   self.window.file.modified = false
 end

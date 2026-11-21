@@ -13,16 +13,6 @@ plugin for the [Vis](https://github.com/martanne/vis) editor.
 
 Edit your filesystem like a text buffer.
 
-### Whats implemented
-- List cwd
-- Traverse directory
-- Open file
-- Copy
-- Delete
-- Rename
-- Create
-- Move
-
 ### Planned
 - Full posix system support
 
