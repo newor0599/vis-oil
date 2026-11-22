@@ -17,6 +17,9 @@ Edit your filesystem like a text buffer.
 
 ### Planned
 - Full posix system support
+- Sort (creation date, name, size, last modified)
+- Icons
+- Show file information (size, creation date, last modified, permissions)
 
 ### Installation
 With vis-plug
