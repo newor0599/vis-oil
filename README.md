@@ -15,9 +15,7 @@ Edit your filesystem like a text buffer.
 
 ### Planned
 - Full posix system support
-- Sort (creation date, name, size, last modified)
 - Icons
-- Show file information (size, creation date, last modified, permissions)
 
 ### Installation
 With vis-plug
@@ -25,7 +23,7 @@ With vis-plug
 { "newor0599/vis-oil", alias="oil" },
 ```
 
-### Configuration
+### Preview configuration
 ```lua
 -- Initialize default configuration
 oil()
@@ -41,7 +39,45 @@ oil:map_open_vertical(" vv")
 
 -- Map <Space>hh to open oil in a new horizontal window
 oil:map_open_horizontal(" hh")
+
+-- Show last modified as MM/DD/YYYY HH:MM
+oil.options.attributes = {"%D %H:%M"}
+
+-- Sort entries in option order
+--   1. Sort directory first
+--   2. Sort hidden entries last
+--   3. Sort entry size by ascending order
+oil.options.sort = { "directory", "hidden d", "size" }
+
+-- Set custom info column separator
+oil.options.separator = "╳ "
 ```
+
+### Sort options
+vis-oil sort entries by option order
+
+| option    | description             |
+| --------- | ----------------------- |
+| modified  | sort by last modified   |
+| size      | sort by file size       |
+| name      | sort by file name       |
+| hidden    | sort hidden entry first |
+| directory | sort directory first    |
+
+option with suffix `d` will operate in descending order
+
+### Attribute option
+
+| option       | description                       |
+| ------------ | --------------------------------- |
+| size         | show entry size by automatic unit |
+| permissions  | show entry mode bit               |
+| date         | show date in locale format        |
+| filetype     | show entry filetype character     |
+| user owner   | show entry's user owner           |
+| group owner  | show entry's group owner          |
+| B,KB,MB,GB.. | show size in specific unit        |
+| *strftime*   | show time with custom strftime    |
 
 ### Command usage
 ```lua
