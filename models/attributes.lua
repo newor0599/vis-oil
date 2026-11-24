@@ -1,0 +1,1 @@
+---@alias Attributes "size"|"permissions"|"date"|"filetype"|"user owner"|"group owner"|"B"|"KB"|"MB"|"GB"|"TB"|"PB"|string -- strftime for time, or other options to enable them

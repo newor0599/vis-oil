@@ -27,25 +27,48 @@ BufferCache = require("vis-oil.models.buffer_cache")
 ---@field entry_cache EntryCache
 ---@field buffer_cache BufferCache[]
 oil = {
-  DIR_COLOR = vis.ui:style_push("fore:#95AEC7"),
-  SYM_COLOR = vis.ui:style_push("fore:#C7C795"),
-  CREATE_COLOR = vis.ui:style_push("fore:#ff9e3b"),
-  COPY_COLOR = vis.ui:style_push("fore:#d61a1a"),
-  MOVE_COLOR = vis.ui:style_push("fore:#98bb6c"),
-  DELETE_COLOR = vis.ui:style_push("fore:#b1459f"),
-  ENTRY_STRUCT = "^[a-f0-9]+│ .*",
-  ID_MATCH = "[a-f0-9]+",
-  NAME_GSUB = "^[a-f0-9]+│ ",
   window_ids = 0,
   entry_ids = 0,
   entry_cache = {},
   buffer_cache = {},
 }
 
+---@class oil.options
+---@field show_hidden boolean
+---@field debug boolean
+---@field sort sorts[]
+---@field attributes Attributes[]
 oil.options = {
-  show_hidden = true,
-  debug = false,
+  show_hidden = true, --- Show hidden
+  debug = false, --- Show debug messages
+  ---@type sorts[]
+  sort = { "directory", "hidden", "size d" },--- Sort methods
+  ---@type Attributes[]
+  attributes = {}, ---strftime for custom time format, or other option
+  separator = "│ " ---Set seperator for the info column
 }
+
+oil.const = {
+  DIR_COLOR = vis.ui:style_push("fore:#95AEC7"),
+  SYM_COLOR = vis.ui:style_push("fore:#C7C795"),
+  CREATE_COLOR = vis.ui:style_push("fore:#ff9e3b"),
+  COPY_COLOR = vis.ui:style_push("fore:#d61a1a"),
+  MOVE_COLOR = vis.ui:style_push("fore:#98bb6c"),
+  DELETE_COLOR = vis.ui:style_push("fore:#b1459f"),
+  ID_MATCH = "[a-f0-9]+",
+}
+
+setmetatable(oil.const, {
+  __index = function(t, key)
+    if key == "ID_GSUB" then
+      return "^[a-f0-9]+.*" .. oil.options.separator
+    end
+    if key == "ENTRY_STRUCT" then
+      return "^[a-f0-9]+" .. oil.options.separator .. ".*"
+    end
+    return nil
+  end
+})
 
 function oil:make_window_id()
   self.window_ids = self.window_ids + 1
@@ -232,12 +255,12 @@ vis:command_register("oil", function(argv)
 end)
 
 vis.events.subscribe(vis.events.INIT, function()
-  oil.DIR_COLOR = vis.ui:style_push("fore:#95AEC7")
-  oil.SYM_COLOR = vis.ui:style_push("fore:#C7C7ff")
-  oil.CREATE_COLOR = vis.ui:style_push("fore:#ff9e3b")
-  oil.COPY_COLOR = vis.ui:style_push("fore:#d61a1a")
-  oil.MOVE_COLOR = vis.ui:style_push("fore:#98bb6c")
-  oil.DELETE_COLOR = vis.ui:style_push("fore:#b1459f")
+  oil.const.DIR_COLOR = vis.ui:style_push("fore:#95AEC7")
+  oil.const.SYM_COLOR = vis.ui:style_push("fore:#C7C7ff")
+  oil.const.CREATE_COLOR = vis.ui:style_push("fore:#ff9e3b")
+  oil.const.COPY_COLOR = vis.ui:style_push("fore:#d61a1a")
+  oil.const.MOVE_COLOR = vis.ui:style_push("fore:#98bb6c")
+  oil.const.DELETE_COLOR = vis.ui:style_push("fore:#b1459f")
 end)
 
 setmetatable(oil, { __call = oil.init })

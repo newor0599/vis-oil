@@ -1,10 +1,8 @@
 # vis-oil
 
-## V1 is now out with stable features :) 
-
 > ⚠️ Mostly stable, still hunting for bugs and security issues.
 
-> ⚠️ Only tested on linux, not on other posix system
+> ⚠️ Only tested on Linux (GNU) , not on other posix system
 
 > ⚠️ There is a possible security vulnerebility of **command injection** attack, BEWARE!
 

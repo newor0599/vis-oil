@@ -52,11 +52,13 @@ function instance:parse_ls(ls_out, cwd)
     local owner_group = params[4]
     local type = params[1]:sub(1, 1)
     local id = self.oil:make_entry_id()
-    local date = no_name:sub(-13, -2)
-    local size = ""
+
+    local list = {}
     for v in no_name:gmatch("[^ ]+") do
-      size = v
+      list[#list + 1] = v
     end
+    local date = tonumber(list[#list]) or 0
+    local size = tonumber(list[#list - 1]) or 0
 
     local entry = Entry.new(
       type,
@@ -114,6 +116,7 @@ function instance:get_buffer_content(cwd)
   self.oil:log("Using new data")
 
   local entries = self:get_entries()
+  Utils.sort_entries(entries, self.oil.options.sort)
 
   local buffer_content = ""
   local directory_lines = 0
@@ -130,7 +133,10 @@ function instance:get_buffer_content(cwd)
     end
 
     local id = Utils.int_to_id(entry.id)
-    local name = id .. "│ " .. entry["display_name"] .. "\n"
+    local format = function(s) return string.format("%6s %s", s, self.oil.options.separator) end
+    local attr_str = Utils.parse_attr_list(entry, self.oil.options.attributes, format)
+
+    local name = id .. self.oil.options.separator .. attr_str .. entry["display_name"] .. "\n"
     if entry["is_dir"] then
       directory_lines = directory_lines + #name
     end
@@ -156,7 +162,7 @@ function instance:render_entries()
     local orig_filename = self.original_file:match("[^/]+$")
     for entry in buffer_cache.content:gmatch("[^\n]+") do
       select_cursor = select_cursor + 1
-      if entry:gsub(self.oil.NAME_GSUB, "") == orig_filename then
+      if entry:gsub(self.oil.const.ID_GSUB, "") == orig_filename then
         break
       end
     end
@@ -165,8 +171,9 @@ function instance:render_entries()
     end
   end
 
-  vis:feedkeys("e")
-  vis:feedkeys("2l")
+  local info_colm_len = Utils.utf8_len(buffer_cache.content:match(self.oil.const.ID_GSUB .. "../"))
+
+  vis:feedkeys(tostring(info_colm_len - 3) .. "l")
 
   self.window.file.modified = false
 end
@@ -178,7 +185,7 @@ function instance:highlight()
   if self.window.style == nil then
     return
   end
-  self.window:style(self.oil.DIR_COLOR, 0, self.directory_lines - 1)
+  self.window:style(self.oil.const.DIR_COLOR, 0, self.directory_lines - 1)
 end
 
 function instance:end_instance()
@@ -202,6 +209,8 @@ function instance:window_closed(win)
   end
   vis.events.unsubscribe(vis.events.WIN_CLOSE, self.close_handler)
   vis.events.unsubscribe(vis.events.WIN_HIGHLIGHT, self.highlight_handler)
+  vis.events.unsubscribe(vis.events.FILE_SAVE_PRE, self.highlight_handler)
+  self = nil
 end
 
 ---@param force? boolean
@@ -247,12 +256,12 @@ end
 
 function instance:interact_entry()
   local cursor_content = self:get_cursor_entry()
-  cursor_content = cursor_content:match(self.oil.ENTRY_STRUCT)
+  cursor_content = cursor_content:match(self.oil.const.ENTRY_STRUCT)
   if not cursor_content then
     vis:info("Invalid path")
     return
   end
-  local id = cursor_content:match(self.oil.ID_MATCH)
+  local id = cursor_content:match(self.oil.const.ID_MATCH)
   id = tonumber(id, 16)
   local entry = self.oil.entry_cache[id]
   if entry == nil then
@@ -312,13 +321,12 @@ function instance:string_to_entry(content)
   }
   for line in content:gmatch("[^\n]+") do
     ---@cast line string
-    if line:find(self.oil.ENTRY_STRUCT) then
+    if line:find(self.oil.const.ENTRY_STRUCT) then
       local is_dir = line:sub(-1) == "/"
-      local id = line:match(self.oil.ID_MATCH)
+      local id = line:match(self.oil.const.ID_MATCH)
       id = tonumber(id, 16)
       local entry = self.oil.entry_cache[id]
-      local display_name = line:match(" .*")
-      display_name = display_name:sub(2, #display_name)
+      local display_name = line:gsub(oil.const.ID_GSUB, "")
       local name = display_name:gsub(" %-> .*", "")
       entries[#entries + 1] = {
         name = name,
@@ -414,7 +422,7 @@ end
 ---@return Actions
 function instance:evaluate_cross_cwd_diff(actions_list)
   local actions = Actions.new()
-  for index, value in ipairs(actions_list) do
+  for _, value in ipairs(actions_list) do
     actions = actions .. value
   end
 
@@ -454,13 +462,19 @@ end
 
 ---@param file vis.file
 ---@param path string
-function instance:pre_write_action(file, path)
-  -- prevent other instance trigger post write action
+function instance:pre_write_action(_, path)
+  -- prevent other instance trigger write action
+  if not self.window then
+    return
+  end
+  if not self.window.file then
+    return
+  end
   if self.window.file.path ~= path then
     return
   end
 
-  self.oil:log("Executing post write action")
+  self.oil:log("Executing write action")
   self:cache_buffer()
 
   local actions_list = {}

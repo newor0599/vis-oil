@@ -1,0 +1,1 @@
+---@alias sorts "modified"|"size"|"name"|"hidden"|"directory"|"modified d"|"size d"|"name d"|"hidden d"|"directory d" Trailing d for decending order

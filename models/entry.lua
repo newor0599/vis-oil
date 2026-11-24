@@ -1,15 +1,15 @@
 ---@class Entry
 ---@field path string
----@field is_dir string
+---@field is_dir boolean
 ---@field type string
----@field size string
----@field date string
+---@field size number
+---@field date number
 ---@field user_owner string
 ---@field group_owner string
 ---@field permissions string
 ---@field name string
 ---@field display_name string
----@field is_hidden string
+---@field is_hidden boolean
 ---@field id integer
 local Entry = {}
 
@@ -18,8 +18,8 @@ local Entry = {}
 ---@param permissions string
 ---@param user_owner string
 ---@param group_owner string
----@param size string
----@param date string
+---@param size number
+---@param date number
 ---@param name string
 ---@param cwd string
 ---@param is_dir boolean
