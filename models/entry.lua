@@ -40,7 +40,7 @@ function Entry.new(
   ---@type string
   local display_name = name
   local file_name = name:gsub(" %-> .*", "")
-  if is_dir and file_name:sub(-1) ~= "/" and type ~= 'l' then
+  if is_dir and file_name:sub(-1) ~= "/" and type ~= "l" then
     file_name = file_name .. "/"
   end
 

@@ -15,7 +15,8 @@ function M.concat(t1, t2)
   table.move(t2.move or {}, 1, #(t2.move or {}), #(t1.move or {}) + 1, t1.move or {})
   table.move(t2.dir or {}, 1, #(t2.dir or {}), #(t1.dir or {}) + 1, t1.dir or {})
   table.move(t2.file or {}, 1, #(t2.file or {}), #(t1.file or {}) + 1, t1.file or {})
-  table.move(t2.delete or {}, 1, #(t2.delete or {}), #(t1.delete or {}) + 1, t1.delete or {})
+  table.move(t2.delete or {}, 1, #(t2.delete or {}), #(t1.delete or {}) + 1,
+             t1.delete or {})
   return t1
 end
 
@@ -39,11 +40,11 @@ function M.tostring(t)
     string = string .. "[COPY]\n"
     for _, srcdst in ipairs(t.copy) do
       string = string
-        .. "- "
-        .. srcdst.source
-        .. " -> "
-        .. srcdst.destination
-        .. "\n"
+          .. "- "
+          .. srcdst.source
+          .. " -> "
+          .. srcdst.destination
+          .. "\n"
     end
     string = string .. "\n"
   end
@@ -52,11 +53,11 @@ function M.tostring(t)
     string = string .. "[MOVE]\n"
     for _, srcdst in ipairs(t.move) do
       string = string
-        .. "- "
-        .. srcdst.source
-        .. " -> "
-        .. srcdst.destination
-        .. "\n"
+          .. "- "
+          .. srcdst.source
+          .. " -> "
+          .. srcdst.destination
+          .. "\n"
     end
     string = string .. "\n"
   end

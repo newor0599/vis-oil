@@ -133,10 +133,13 @@ function instance:get_buffer_content(cwd)
     end
 
     local id = Utils.int_to_id(entry.id)
-    local format = function(s) return string.format("%6s %s", s, self.oil.options.separator) end
+    local format = function(s)
+      return string.format("%6s %s", s, self.oil.options.separator)
+    end
     local attr_str = Utils.parse_attr_list(entry, self.oil.options.attributes, format)
 
-    local name = id .. self.oil.options.separator .. attr_str .. entry["display_name"] .. "\n"
+    local name = id ..
+        self.oil.options.separator .. attr_str .. entry["display_name"] .. "\n"
     if entry["is_dir"] then
       directory_lines = directory_lines + #name
     end
@@ -144,8 +147,9 @@ function instance:get_buffer_content(cwd)
     buffer_content = buffer_content .. name
     ::continue::
   end
-  return BufferCache.new(buffer_content, directory_lines,
-    self.oil.options.show_hidden)
+  return BufferCache.new(buffer_content,
+                         directory_lines,
+                         self.oil.options.show_hidden)
 end
 
 function instance:render_entries()
@@ -171,7 +175,8 @@ function instance:render_entries()
     end
   end
 
-  local info_colm_len = Utils.utf8_len(buffer_cache.content:match(self.oil.const.ID_GSUB .. "../"))
+  local info_colm_len = Utils.utf8_len(buffer_cache.content:match(self.oil.const.ID_GSUB ..
+    "../"))
 
   vis:feedkeys(tostring(info_colm_len - 3) .. "l")
 
@@ -238,7 +243,8 @@ function instance:cache_buffer(window)
     window.oil.directory_lines,
     self.oil.options.show_hidden
   )
-  self.oil:log("Cached buffer for " .. window.oil.cwd .. "; Show hidden: " .. tostring(self.oil.options.show_hidden))
+  self.oil:log("Cached buffer for " ..
+    window.oil.cwd .. "; Show hidden: " .. tostring(self.oil.options.show_hidden))
 end
 
 function instance:get_cursor_entry()

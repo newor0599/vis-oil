@@ -42,7 +42,7 @@ oil.options = {
   show_hidden = true, --- Show hidden
   debug = false, --- Show debug messages
   ---@type sorts[]
-  sort = { "directory", "hidden", "size d" },--- Sort methods
+  sort = { "directory", "hidden", "size d" }, --- Sort methods
   ---@type Attributes[]
   attributes = {}, ---strftime for custom time format, or other option
   separator = "│ " ---Set seperator for the info column

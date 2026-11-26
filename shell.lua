@@ -18,16 +18,21 @@ end
 ---@param cwd string Current working directory to list
 ---@return string # output of ls
 function M.get_ls(cwd)
-  local ls_out = io.popen('ls --time-style=+%s -lapQ --group-directories-first "' .. cwd .. '"')
-    :lines("a")()
+  local ls_out = io.popen(
+    'ls --time-style=+%s -lapQ --group-directories-first "'
+    .. cwd
+    .. '"'):lines("a")()
   return ls_out
 end
 
 ---@param path string
 ---@return boolean
 function M.can_access_path(path)
-  local data = io.popen('test -r "' .. path .. '" && echo "yes" || echo "no"')
-    :lines("a")()
+  local data = io.popen(
+    'test -r "'
+    .. path
+    .. '" && echo "yes" || echo "no"'
+  ):lines("a")()
   return data:match("yes") ~= nil
 end
 

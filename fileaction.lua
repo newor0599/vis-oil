@@ -24,10 +24,10 @@ end
 function M.copy(srcdst)
   return os.execute(
     'cp -r "'
-      .. M.clean_path(srcdst.source)
-      .. '" "'
-      .. M.clean_path(srcdst.destination)
-      .. '"'
+    .. M.clean_path(srcdst.source)
+    .. '" "'
+    .. M.clean_path(srcdst.destination)
+    .. '"'
   )
 end
 
