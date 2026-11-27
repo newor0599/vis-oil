@@ -64,10 +64,6 @@ function M.prompt_user(prompt, choices)
   return choice
 end
 
-M.extension_syntax = {
-  py = "python",
-}
-
 function M.round(num, places)
   local mult = 10 ^ (places or 0)
   return math.floor(num * mult + 0.5) / mult
