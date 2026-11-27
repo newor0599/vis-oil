@@ -8,6 +8,7 @@
 ---@field original_file string
 ---@field window vis.window
 ---@field directory_lines integer
+---@field message? string
 instance = {}
 instance.__index = instance
 
@@ -190,6 +191,10 @@ function instance:highlight()
   if self.window.style == nil then
     return
   end
+  if self.message then
+    vis:info(self.message)
+    self.message = nil
+  end
   self.window:style(self.oil.const.DIR_COLOR, 0, self.directory_lines - 1)
 end
 
@@ -264,27 +269,27 @@ function instance:interact_entry()
   local cursor_content = self:get_cursor_entry()
   cursor_content = cursor_content:match(self.oil.const.ENTRY_STRUCT)
   if not cursor_content then
-    vis:info("Invalid path")
+    self.message = "Invalid path"
     return
   end
   local id = cursor_content:match(self.oil.const.ID_MATCH)
   id = tonumber(id, 16)
   local entry = self.oil.entry_cache[id]
   if entry == nil then
-    vis:info("Not a valid path")
+    self.message = "Not a valid path"
     return
   end
 
   local cwd = Utils.normalize_path(self.cwd .. entry.name)
   local can_access = Shell.can_access_path(cwd)
   if not can_access then
-    vis:info("No permission to access this path")
+    self.message = "No permission to access this path"
     return
   end
 
   if entry.name ~= "../" then
     if entry.type:find("[-dl]") == nil then
-      vis:info("Not an editable ascii file")
+      self.message = "Not an editable ascii file"
       return
     end
   end
@@ -316,7 +321,7 @@ function instance:goto_parent()
     self:render_entries()
     return
   end
-  vis:info("No permission to access this path")
+  self.message = "No permission to access this path"
 end
 
 ---@param content string
@@ -490,7 +495,7 @@ function instance:pre_write_action(_, path)
   local actions = self:evaluate_cross_cwd_diff(actions_list)
 
   if #tostring(actions) <= 0 then
-    vis:info("No changes")
+    self.message = "No changes"
     return
   end
 
@@ -516,6 +521,11 @@ function instance:pre_write_action(_, path)
       FileAction.delete(value)
     end
     self.oil.entry_cache[self.cwd] = nil
+    self.message = "Changes applied succesfully"
+  elseif answer == "no" then
+    self.message = "Changes is cleared"
+  else
+    self.message = "Cancelled applying changes"
   end
 
   vis:message("")
@@ -584,7 +594,7 @@ function instance:init()
   end)
 
   self.window:map(vis.modes.NORMAL, self.oil.keybinds.print_cwd, function()
-    vis:info(self.cwd)
+    self.message = self.cwd
   end)
 end
 
@@ -599,6 +609,7 @@ function instance.new(oil, window, cwd, original_file)
     original_file = original_file,
     window = window,
     directory_lines = 0,
+    message = "",
   }
   setmetatable(new, instance)
 
