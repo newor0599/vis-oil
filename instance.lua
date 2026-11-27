@@ -391,7 +391,7 @@ function instance:evaluate_changes(cwd)
     elseif user_entry.name ~= orig_entry.name and id_check[user_entry.id] then
       actions.copy[#actions.copy + 1] = SourceDestination.new(
         orig_entry.path .. orig_entry.name,
-        self.cwd .. user_entry.name
+        user_entry.path .. user_entry.name
       )
     end
     ::continue::
