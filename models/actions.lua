@@ -27,10 +27,10 @@ function M.tostring(t)
 
   if #t.dir > 0 or #t.file > 0 then
     string = string .. "[NEW]\n"
-    for _, path in ipairs(t.file) do
+    for _, path in ipairs(t.dir) do
       string = string .. "- " .. path .. "\n"
     end
-    for _, path in ipairs(t.dir) do
+    for _, path in ipairs(t.file) do
       string = string .. "- " .. path .. "\n"
     end
     string = string .. "\n"

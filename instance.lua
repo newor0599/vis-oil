@@ -371,6 +371,9 @@ function instance:evaluate_changes(cwd)
 
   for _, user_entry in ipairs(user_entries) do
     local orig_entry = self.oil.entry_cache[user_entry.id]
+    if orig_entry.name == "../" then
+      goto continue
+    end
     -- Identify copy from other directory
     if user_entry.id > cwd_range.finish or user_entry.id < cwd_range.start then
       actions.copy[#actions.copy + 1] = SourceDestination.new(
@@ -391,6 +394,7 @@ function instance:evaluate_changes(cwd)
         self.cwd .. user_entry.name
       )
     end
+    ::continue::
   end
 
   -- Identify deleted
@@ -399,6 +403,9 @@ function instance:evaluate_changes(cwd)
       goto continue
     end
     if self.oil.entry_cache[i].name == "./" then
+      goto continue
+    end
+    if self.oil.entry_cache[i].name == "../" then
       goto continue
     end
     if
@@ -414,13 +421,19 @@ function instance:evaluate_changes(cwd)
 
   -- Identify new
   for _, name in ipairs(user_entries[0]) do
+    ---@cast name string
     if #name <= 0 then
       goto continue
     end
 
-    if name:sub(-1) == "/" then
-      actions.dir[#actions.dir + 1] = self.cwd .. name
-    else
+    local file_name = name:match("[^/]+$") or ""
+    local dir_path = name:match(".*/") or ""
+
+    if #dir_path > 0 then
+      actions.dir[#actions.dir + 1] = self.cwd .. dir_path
+    end
+
+    if #file_name > 0 then
       actions.file[#actions.file + 1] = self.cwd .. name
     end
 
@@ -474,13 +487,14 @@ end
 ---@param file vis.file
 ---@param path string
 function instance:pre_write_action(_, path)
-  -- prevent other instance trigger write action
   if not self.window then
     return
   end
   if not self.window.file then
     return
   end
+
+  -- prevent other instance trigger write action
   if self.window.file.path ~= path then
     return
   end
@@ -505,11 +519,11 @@ function instance:pre_write_action(_, path)
   self.oil:log("User answered " .. tostring(answer))
 
   if answer == "yes" then
-    for _, value in ipairs(actions.file) do
-      FileAction.new_file(value)
-    end
     for _, value in ipairs(actions.dir) do
       FileAction.new_dir(value)
+    end
+    for _, value in ipairs(actions.file) do
+      FileAction.new_file(value)
     end
     for _, value in ipairs(actions.copy) do
       FileAction.copy(value)
